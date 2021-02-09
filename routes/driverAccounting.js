@@ -1,4 +1,5 @@
 const express = require('express');
+const {authenticateJWT} = require("../functions/validate");
 const {dbAdd} = require("../functions/db_func");
 const router = express.Router();
 
@@ -14,7 +15,7 @@ const {dbQueryList} = require('../functions/db_func')
  *  2: user error
  */
 
-router.get('/query', (req, res) => {
+router.get('/query', authenticateJWT, (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -51,7 +52,7 @@ router.get('/query', (req, res) => {
 })
 
 // 给司机还款
-router.get('/repayment', async (req, res) => {
+router.get('/repayment', authenticateJWT, async (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {

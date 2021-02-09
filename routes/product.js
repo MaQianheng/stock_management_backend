@@ -1,14 +1,13 @@
 const express = require('express');
 const multer = require("multer");
 const fs = require('fs');
+const {authenticateJWT, validateRequiredQueryParameters} = require("../functions/validate");
 const {undefinedProductId} = require("../db/db_models");
 const {dbQueryOptions} = require("../functions/db_func");
 const {handleImages} = require("../functions/imageHandler");
 const router = express.Router();
 
 const {ProductModel, ProductSubModel, ColorModel, ShelfModel} = require('../db/db_models')
-const {validateRequiredQueryParameters} = require('../functions/validate')
-const {funcCurrentPage} = require('../functions/utils')
 
 const {dbQueryListSync, dbAddUnique} = require('../functions/db_func')
 
@@ -18,7 +17,7 @@ const {dbQueryListSync, dbAddUnique} = require('../functions/db_func')
  *  1: server error
  *  2: user error
  */
-router.get('/query', async (req, res) => {
+router.get('/query', authenticateJWT,  async (req, res) => {
     let objProductFilter = {}
     try {
         objProductFilter = validateRequiredQueryParameters(req, res, {
@@ -177,15 +176,15 @@ router.get('/query', async (req, res) => {
     // .skip(((intCurrentPageCount === 0 ? 1 : intCurrentPageCount) - 1) * 10).limit(intCurrentPageCount === 0 ? 0 : 10);
 })
 
-router.get('/query_code_options', (req, res) => {
+router.get('/query_code_options', authenticateJWT,  (req, res) => {
     dbQueryOptions(req, res, ProductModel, {}, "code")
 })
 
-router.get('/query_product_options', (req, res) => {
+router.get('/query_product_options', authenticateJWT,  (req, res) => {
     dbQueryOptions(req, res, ProductModel, {}, "name")
 })
 
-router.get('/fuzzy_query_product_code', (req, res) => {
+router.get('/fuzzy_query_product_code', authenticateJWT,  (req, res) => {
     let objParameters = {}
     try {
         objParameters = validateRequiredQueryParameters(req, res, {
@@ -216,7 +215,7 @@ router.get('/fuzzy_query_product_code', (req, res) => {
     }).limit(5)
 })
 
-router.get('/fuzzy_query_product_name', (req, res) => {
+router.get('/fuzzy_query_product_name', authenticateJWT,  (req, res) => {
     let objParameters = {}
     try {
         objParameters = validateRequiredQueryParameters(req, res, {
@@ -249,7 +248,7 @@ router.get('/fuzzy_query_product_name', (req, res) => {
 
 
 router.use(multer({dest: './dist'}).array('productImages'));
-router.post('/add', async (req, res) => {
+router.post('/add', authenticateJWT, async (req, res) => {
     let objParameters
     try {
         objParameters = validateRequiredQueryParameters(req, res, {
@@ -309,7 +308,7 @@ router.post('/add', async (req, res) => {
     }
 })
 
-router.post('/update', async (req, res) => {
+router.post('/update', authenticateJWT, async (req, res) => {
     let objParameters
     try {
         objParameters = validateRequiredQueryParameters(req, res, {
@@ -422,7 +421,7 @@ router.post('/update', async (req, res) => {
     })
 })
 
-router.get('/delete', async (req, res) => {
+router.get('/delete', authenticateJWT, async (req, res) => {
     // 6016530331f7639ec27d8a45
     let objFilter = {}
     try {

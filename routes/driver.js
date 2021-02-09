@@ -1,11 +1,12 @@
 const express = require('express');
+const {authenticateJWT} = require("../functions/validate");
 const router = express.Router();
 const {undefinedDriverId} = require("../db/db_models");
 
 const {DriverModel, DriverAccountingModel, SaleModel} = require('../db/db_models')
 const {validateRequiredQueryParameters} = require('../functions/validate')
 
-const {dbQueryList, dbAddUnique, dbUpdateUniqueById, dbDeleteById, dbQueryOptions} = require('../functions/db_func')
+const {dbQueryList, dbAddUnique, dbUpdateUniqueById, dbQueryOptions} = require('../functions/db_func')
 
 /**
  * err_code:
@@ -14,7 +15,7 @@ const {dbQueryList, dbAddUnique, dbUpdateUniqueById, dbDeleteById, dbQueryOption
  *  2: user error
  */
 
-router.get('/query', (req, res) => {
+router.get('/query', authenticateJWT,  (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -45,14 +46,15 @@ router.get('/query', (req, res) => {
             message: `${err}`
         })
     }
+    objFilter._id = {$ne: undefinedDriverId}
     dbQueryList(req, res, DriverModel, 10, objFilter)
 })
 
-router.get('/query_driver_options', (req, res) => {
+router.get('/query_driver_options', authenticateJWT,  (req, res) => {
     dbQueryOptions(req, res, DriverModel, {}, "name")
 })
 
-router.get('/fuzzy_query_driver_name', (req, res) => {
+router.get('/fuzzy_query_driver_name', authenticateJWT,  (req, res) => {
     let objParameters = {}
     try {
         objParameters = validateRequiredQueryParameters(req, res, {
@@ -83,7 +85,7 @@ router.get('/fuzzy_query_driver_name', (req, res) => {
     }).limit(5)
 })
 
-router.get('/add', async (req, res) => {
+router.get('/add', authenticateJWT,  async (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -112,7 +114,7 @@ router.get('/add', async (req, res) => {
     await dbAddUnique(req, res, DriverModel, {plate: objFilter.plate}, objFilter)
 })
 
-router.get('/update', (req, res) => {
+router.get('/update', authenticateJWT,  (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -152,7 +154,7 @@ router.get('/update', (req, res) => {
     dbUpdateUniqueById(req, res, DriverModel, objFilter._id, {plate: objFilter.plate}, objFilter)
 })
 
-router.get('/delete', async (req, res) => {
+router.get('/delete', authenticateJWT,  async (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {

@@ -68,7 +68,7 @@ exports.funcConvertFormat = (data, directive) => {
             break
         }
         default: {
-            throw {message: "require correct directive"}
+            break
         }
     }
     return data

@@ -1,4 +1,5 @@
 const express = require('express');
+const {authenticateJWT} = require("../functions/validate");
 const {undefinedCustomerId} = require("../db/db_models");
 const {SaleModel} = require("../db/db_models");
 const {dbQueryOptions} = require("../functions/db_func");
@@ -7,7 +8,7 @@ const router = express.Router();
 const {CustomerModel} = require('../db/db_models')
 const {validateRequiredQueryParameters} = require('../functions/validate')
 
-const {dbQueryList, dbAddUnique, dbUpdateUniqueById, dbDeleteById} = require('../functions/db_func')
+const {dbQueryList, dbAddUnique, dbUpdateUniqueById} = require('../functions/db_func')
 
 /**
  * err_code:
@@ -16,11 +17,21 @@ const {dbQueryList, dbAddUnique, dbUpdateUniqueById, dbDeleteById} = require('..
  *  2: user error
  */
 
-router.get('/query', async (req, res) => {
+router.get('/query', authenticateJWT,  async (req, res) => {
+    try {
+        validateRequiredQueryParameters(req, res, {
+            arrLevelRange: [0, 0]
+        })
+    } catch (err) {
+        return res.status(500).json({
+            err_code: 1,
+            message: `${err}`
+        })
+    }
     dbQueryList(req, res, CustomerModel, 12, {_id: {$ne: undefinedCustomerId}})
 })
 
-router.get('/add', async (req, res) => {
+router.get('/add', authenticateJWT,  async (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -33,7 +44,8 @@ router.get('/add', async (req, res) => {
                 type: 'String',
                 isRequired: false,
                 str: '备注'
-            }
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({
@@ -44,11 +56,11 @@ router.get('/add', async (req, res) => {
     await dbAddUnique(req, res, CustomerModel, {name: objFilter.name}, objFilter)
 })
 
-router.get('/query_customer_options', (req, res) => {
+router.get('/query_customer_options', authenticateJWT,  (req, res) => {
     dbQueryOptions(req, res, CustomerModel, {}, "customer")
 })
 
-router.get('/fuzzy_query_customer_name', (req, res) => {
+router.get('/fuzzy_query_customer_name', authenticateJWT,  (req, res) => {
     let objParameters = {}
     try {
         objParameters = validateRequiredQueryParameters(req, res, {
@@ -56,7 +68,8 @@ router.get('/fuzzy_query_customer_name', (req, res) => {
                 type: 'String',
                 isRequired: true,
                 str: '客户名称'
-            }
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({
@@ -80,7 +93,7 @@ router.get('/fuzzy_query_customer_name', (req, res) => {
     // clubName: `/${clubName}/`
 })
 
-router.get('/update', async (req, res) => {
+router.get('/update', authenticateJWT,  async (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -98,7 +111,8 @@ router.get('/update', async (req, res) => {
                 type: 'String',
                 isRequired: false,
                 str: '备注'
-            }
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({
@@ -115,7 +129,7 @@ router.get('/update', async (req, res) => {
     dbUpdateUniqueById(req, res, CustomerModel, objFilter._id, {name: objFilter.name}, objFilter)
 })
 
-router.get('/delete', async (req, res) => {
+router.get('/delete', authenticateJWT,  async (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -123,7 +137,8 @@ router.get('/delete', async (req, res) => {
                 type: 'StringArray',
                 isRequired: true,
                 str: '客户id'
-            }
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({

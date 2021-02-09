@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose')
+const {authenticateJWT} = require("../functions/validate");
 const {ProductModel} = require("../db/db_models");
 const {undefinedColorId} = require("../db/db_models");
 
@@ -16,7 +17,7 @@ const {dbQueryList, dbAddUnique, dbUpdateUniqueById, dbQueryOptions} = require('
  *  2: user error
  */
 
-router.get('/query', (req, res) => {
+router.get('/query', authenticateJWT, (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -35,11 +36,19 @@ router.get('/query', (req, res) => {
     dbQueryList(req, res, ColorModel, 10, objFilter)
 })
 
-router.get('/query_color_options', (req, res) => {
+router.get('/query_color_options', authenticateJWT, (req, res) => {
+    try {
+        validateRequiredQueryParameters(req, res, {})
+    } catch (err) {
+        return res.status(500).json({
+            err_code: 1,
+            message: `${err}`
+        })
+    }
     dbQueryOptions(req, res, ColorModel, {}, "color")
 })
 
-router.get('/add', async (req, res) => {
+router.get('/add', authenticateJWT, async (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -58,7 +67,7 @@ router.get('/add', async (req, res) => {
     await dbAddUnique(req, res, ColorModel, {'color': objFilter.color}, {color: objFilter.color})
 })
 
-router.get('/update', (req, res) => {
+router.get('/update', authenticateJWT, (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -82,7 +91,7 @@ router.get('/update', (req, res) => {
     dbUpdateUniqueById(req, res, ColorModel, objFilter._id, {'color': objFilter.color}, {color: objFilter.color})
 })
 
-router.get('/delete', async (req, res) => {
+router.get('/delete', authenticateJWT, async (req, res) => {
     let objParameters = {}
     try {
         objParameters = validateRequiredQueryParameters(req, res, {

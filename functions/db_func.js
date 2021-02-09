@@ -73,7 +73,6 @@ exports.dbAddUniqueSync = async (model, objFilter, objAddData) => {
 
 exports.dbQueryList = (req, res, model, perPageCount = 0, objFilter = {}, populateArr = "") => {
     objFilter = filterObjValue(objFilter)
-    // todo: change to utils func
     let intCurrentPageCount = funcCurrentPage(req)
 
     model.countDocuments(objFilter, function (err, dataCount) {
@@ -95,6 +94,7 @@ exports.dbQueryList = (req, res, model, perPageCount = 0, objFilter = {}, popula
                 data[i]["_doc"]["status"] = 0
                 data[i]["_doc"]["row"] = i
             }
+            // level: {value: "0", text: '根级管理员'}
             return res.status(200).json({
                 err_code: 0,
                 message: "请求成功",

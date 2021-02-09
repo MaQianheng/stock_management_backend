@@ -31,7 +31,8 @@ app.all("*", function (req, res, next) {
     // res.header("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
     res.header("Access-Control-Allow-Origin", "*");
     //允许的header类型
-    res.header("Access-Control-Allow-Headers", "content-type");
+    // res.header("Access-Control-Allow-Headers", "content-type");
+    res.header("Access-Control-Allow-Headers", "content-type, Authorization");
     //跨域允许的请求方式
     res.header("Access-Control-Allow-Methods", "DELETE,PUT,POST,GET,OPTIONS");
     if (req.method.toLowerCase() === 'options')
@@ -40,18 +41,61 @@ app.all("*", function (req, res, next) {
         next();
 })
 
+// const jst = require("jsonwebtoken")
+// const expressJwt = require('express-jwt')
+
+// app.use(function (req, res, next) {
+//     let token = req.headers['authorization'];
+//     if (!token) {
+//         return res.status(500).json({
+//             err_code: 2,
+//             message: '未登录'
+//         })
+//     } else {
+//         jst.verify(token, 'qianhengma', {}, (err, data) => {
+//             if (err) {
+//                 console.log(err.message)
+//                 return res.status(500).json({
+//                     err_code: 2,
+//                     message: '无效的token'
+//                 })
+//             }
+//             if (data) {
+//                 console.log(data)
+//                 return next();
+//             }
+//         })
+//     }
+// });
+
+// app.use(expressJwt({
+//     secret: 'qianhengma',
+//     algorithms: ['HS256'],
+//     credentialsRequired: false,
+//     getToken: function fromHeaderOrQuerystring(req) {
+//         if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
+//             return req.headers.authorization.split(' ')[1];
+//         } else if (req.query && req.query.token) {
+//             return req.query.token;
+//         }
+//         return null;
+//     }
+// }).unless({
+//     //除了这个地址，其他的URL都需要验证
+//     path: ['/login']
+// }));
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
-
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));
+
 app.use(cookieParser());
+
 app.use(express.static(path.join(__dirname, 'public')));
-
 app.use(bodyParser.urlencoded({extended: false}));
-
 app.use('/', indexRouter);
 app.use('/dashboard', dashboardRouter);
 // app.use('/sell', sellRouter);
@@ -64,7 +108,9 @@ app.use('/warehouse', warehouseRouter);
 app.use('/shelf', shelfRouter);
 app.use('/color', colorRouter);
 app.use('/users', usersRouter);
+
 app.use('/driver', driverRouter);
+
 app.use('/driver_accounting', driverAccounting);
 
 app.use('/test', testRouter);
