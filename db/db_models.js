@@ -121,7 +121,8 @@ mongoDB.once('open', function () {
                 code: '已删除货号',
                 name: '已删除商品',
                 colorRef: undefinedColorId,
-                price: 0
+                price: 0,
+                remark: '无备注'
             }).save((err, data) => {
                 if (err) console.log(err)
                 if (data) console.log(data)
@@ -258,11 +259,12 @@ const ShelfModel = mongoose.model('shelf', mongoose.Schema({
 }))
 
 const ProductModel = mongoose.model('product', mongoose.Schema({
-    code: {type: String, required: true},
+    code: {type: String, required: true, unique: true},
     name: {type: String, required: true},
     colorRef: {type: mongoose.Schema.ObjectId, ref: 'color', required: true},
     price: {type: Number, required: false, default: 0},
-    imageURLs: {type: Array, required: false}
+    imageURLs: {type: Array, required: false},
+    remark: {type: String, required: false, default: '无备注'}
 }))
 
 const ProductSubModel = mongoose.model('productSub', mongoose.Schema({
@@ -307,5 +309,6 @@ exports.undefinedCustomerId = undefinedCustomerId
 exports.undefinedSupplierId = undefinedSupplierId
 exports.undefinedDriverId = undefinedDriverId
 exports.undefinedUserId = undefinedUserId
+exports.undefinedSaleId = undefinedSaleId
 
 exports.TestModel = TestModel

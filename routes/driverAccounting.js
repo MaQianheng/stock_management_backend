@@ -19,11 +19,6 @@ router.get('/query', authenticateJWT, (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
-            driverRef: {
-                type: 'String',
-                isRequired: true,
-                str: '司机id'
-            },
             // startTimeStamp: {
             //     type: 'Number',
             //     isRequired: false,
@@ -34,6 +29,12 @@ router.get('/query', authenticateJWT, (req, res) => {
             //     isRequired: false,
             //     str: '结束日期'
             // },
+            driverRef: {
+                type: 'String',
+                isRequired: true,
+                str: '司机id'
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({
@@ -70,7 +71,8 @@ router.get('/repayment', authenticateJWT, async (req, res) => {
                 type: 'Number',
                 isRequired: true,
                 str: '价格'
-            }
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({

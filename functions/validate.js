@@ -21,7 +21,6 @@ exports.authenticateJWT = (req, res, next) => {
             if (err) {
                 return res.status(403).json({message: '无效的token'});
             }
-            console.log(tokenResult)
             UserModel.findOne({_id: tokenResult._id}, {}, {}, (err, user) => {
                 if (err) {
                     return res.status(403).json({message: '用户查找失败'});
@@ -75,7 +74,7 @@ exports.validateRequiredQueryParameters = (req, res, objParameters, isGet = true
         let objValue = objParameters[key]
         if (key === 'arrLevelRange') {
             const {userLevel} = req
-            if (userLevel < objValue[0] || userLevel > objValue[1]) throw `无权访问此页面`
+            if (userLevel < objValue[0] || userLevel > objValue[1]) throw `无权访问`
             continue
         }
         let value = dataSource[key]

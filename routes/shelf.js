@@ -1,10 +1,10 @@
 const express = require('express');
+const {authenticateJWT} = require("../functions/validate");
 const {ProductSubModel} = require("../db/db_models");
 const {dbQueryListCountSync} = require("../functions/db_func");
 const {dbQueryListSync} = require("../functions/db_func");
 const {dbQueryOptions} = require("../functions/db_func");
 const router = express.Router();
-const mongoose = require('mongoose')
 const {undefinedShelfId} = require("../db/db_models");
 
 const {WarehouseModel, ShelfModel} = require('../db/db_models')
@@ -19,7 +19,7 @@ const {dbUpdateUniqueById} = require('../functions/db_func')
  *  2: user error
  */
 
-router.get('/query', async (req, res) => {
+router.get('/query', authenticateJWT, async (req, res) => {
     let objParameters = {}
     try {
         objParameters = validateRequiredQueryParameters(req, res, {
@@ -85,11 +85,11 @@ router.get('/query', async (req, res) => {
     }
 })
 
-router.get('/query_shelf_options', (req, res) => {
+router.get('/query_shelf_options', authenticateJWT, (req, res) => {
     dbQueryOptions(req, res, ShelfModel, {}, "shelf")
 })
 
-router.get('/query_cascading_warehouse_shelf', (req, res) => {
+router.get('/query_cascading_warehouse_shelf', authenticateJWT, (req, res) => {
     ShelfModel.find({}, (err, data) => {
         if (err) {
             return res.status(500).json({
@@ -138,14 +138,14 @@ router.get('/query_cascading_warehouse_shelf', (req, res) => {
     ])
 })
 
-// router.get('/query_shelf_warehouse_KV', (req, res) => {
+// router.get('/query_shelf_warehouse_KV', (req authenticateJWT,, res) => {
 //     ShelfModel.find({}, {}, {}, (err, data) => {}).populate([{
 //         path: 'warehouseRef',
 //         model: 'warehouse',
 //     }])
 // })
 
-router.get('/add', async (req, res) => {
+router.get('/add', authenticateJWT, async (req, res) => {
     let objParameters = {}
     try {
         objParameters = validateRequiredQueryParameters(req, res, {
@@ -189,7 +189,7 @@ router.get('/add', async (req, res) => {
     })
 })
 
-router.get('/update', (req, res) => {
+router.get('/update', authenticateJWT, (req, res) => {
     let objParameters = {}
     try {
         objParameters = validateRequiredQueryParameters(req, res, {
@@ -227,140 +227,7 @@ router.get('/update', (req, res) => {
     }, {shelf: objParameters.shelfName})
 })
 
-// router.get('/delete', async (req, res) => {
-//     let objParameters = {}
-//     try {
-//         objParameters = validateRequiredQueryParameters(req, res, {
-//             _id: {
-//                 type: 'StringArray',
-//                 isRequired: true,
-//                 str: '库房id'
-//             }
-//         })
-//     } catch (err) {
-//         return res.status(500).json({
-//             err_code: 1,
-//             message: `${err}`
-//         })
-//     }
-//     if (objParameters._id.indexOf(undefinedShelfId) !== -1) {
-//         return res.status(500).json({
-//             err_code: 2,
-//             message: '该数据不可被操作'
-//         })
-//     }
-//
-//     let shelfDeleteSessionIsAborted = false
-//     let shelfDeleteSession = await mongoose.startSession()
-//     shelfDeleteSession.startTransaction()
-//
-//     let remainingParallelTasks = 3
-//     // 1. update productSub shelf to undefined
-//     ProductSubModel.updateMany({shelfRef: {$in: objParameters._id}}, {$set: {shelfRef: undefinedShelfId}}, {session: shelfDeleteSession}, (err) => {
-//         if (err) {
-//             if (shelfDeleteSessionIsAborted) return
-//             shelfDeleteSessionIsAborted = true
-//             shelfDeleteSession.abortTransaction().then(() => {
-//                 shelfDeleteSession.endSession()
-//             })
-//             return res.status(500).json({
-//                 err_code: 1,
-//                 message: `删除失败：${err.message}`
-//             })
-//         }
-//         if (shelfDeleteSessionIsAborted) return
-//         remainingParallelTasks -= 1
-//         if (remainingParallelTasks === 0) {
-//             shelfDeleteSession.commitTransaction().then(() => {
-//                 shelfDeleteSession.endSession()
-//                 return res.status(200).json({
-//                     err_code: 0,
-//                     message: `删除成功`
-//                 })
-//             })
-//         }
-//     })
-//     // 2. find warehouse and update shelf count
-//     ShelfModel.find({_id: {$in: objParameters._id}}, {}, {session: shelfDeleteSession}, (err, data) => {
-//         if (err) {
-//             if (shelfDeleteSessionIsAborted) return
-//             shelfDeleteSessionIsAborted = true
-//             shelfDeleteSession.abortTransaction().then(() => {
-//                 shelfDeleteSession.endSession()
-//             })
-//             return res.status(500).json({
-//                 err_code: 1,
-//                 message: `删除失败：${err.message}`
-//             })
-//         }
-//         if (data.length === 0) {
-//             if (shelfDeleteSessionIsAborted) return
-//             shelfDeleteSessionIsAborted = true
-//             shelfDeleteSession.abortTransaction().then(() => {
-//                 shelfDeleteSession.endSession()
-//             })
-//             return res.status(500).json({
-//                 err_code: 1,
-//                 message: `删除失败：无对应库房`
-//             })
-//         }
-//         let _id = []
-//         for (let i = 0; i < data.length; i++) {
-//             _id.push(data[i].warehouseRef)
-//         }
-//         WarehouseModel.updateMany({_id: {$in: _id}}, {$inc: {relatedShelfCount: -1}}, {session: shelfDeleteSession}, (err, data) => {
-//             if (err) {
-//                 if (shelfDeleteSessionIsAborted) return
-//                 shelfDeleteSessionIsAborted = true
-//                 shelfDeleteSession.abortTransaction().then(() => {
-//                     shelfDeleteSession.endSession()
-//                 })
-//                 return res.status(500).json({
-//                     err_code: 1,
-//                     message: `删除失败：${err.message}`
-//                 })
-//             }
-//             if (shelfDeleteSessionIsAborted) return
-//             remainingParallelTasks -= 1
-//             if (remainingParallelTasks === 0) {
-//                 shelfDeleteSession.commitTransaction().then(() => {
-//                     shelfDeleteSession.endSession()
-//                     return res.status(200).json({
-//                         err_code: 0,
-//                         message: `删除成功`
-//                     })
-//                 })
-//             }
-//         })
-//     })
-//     // 3. delete
-//     ShelfModel.deleteMany({_id: {$in: objParameters._id}}, {session: shelfDeleteSession}, (err, data) => {
-//         if (err) {
-//             if (shelfDeleteSessionIsAborted) return
-//             shelfDeleteSessionIsAborted = true
-//             shelfDeleteSession.abortTransaction().then(() => {
-//                 shelfDeleteSession.endSession()
-//             })
-//             return res.status(500).json({
-//                 err_code: 1,
-//                 message: `删除失败：${err.message}`
-//             })
-//         }
-//         if (shelfDeleteSessionIsAborted) return
-//         remainingParallelTasks -= 1
-//         if (remainingParallelTasks === 0) {
-//             shelfDeleteSession.commitTransaction().then(() => {
-//                 shelfDeleteSession.endSession()
-//                 return res.status(200).json({
-//                     err_code: 0,
-//                     message: `删除成功`
-//                 })
-//             })
-//         }
-//     })
-// })
-
-router.get('/delete', async (req, res) => {
+router.get('/delete', authenticateJWT, async (req, res) => {
     let objParameters = {}
     try {
         objParameters = validateRequiredQueryParameters(req, res, {

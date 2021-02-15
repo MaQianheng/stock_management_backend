@@ -3,7 +3,6 @@ const multer = require("multer");
 const fs = require('fs');
 const {authenticateJWT, validateRequiredQueryParameters} = require("../functions/validate");
 const {undefinedProductId} = require("../db/db_models");
-const {dbQueryOptions} = require("../functions/db_func");
 const {handleImages} = require("../functions/imageHandler");
 const router = express.Router();
 
@@ -17,7 +16,7 @@ const {dbQueryListSync, dbAddUnique} = require('../functions/db_func')
  *  1: server error
  *  2: user error
  */
-router.get('/query', authenticateJWT,  async (req, res) => {
+router.get('/query', authenticateJWT, async (req, res) => {
     let objProductFilter = {}
     try {
         objProductFilter = validateRequiredQueryParameters(req, res, {
@@ -81,7 +80,7 @@ router.get('/query', authenticateJWT,  async (req, res) => {
     }
 
     try {
-        arrProduct = await dbQueryListSync(req, res, ProductModel, 5, objProductFilter, "_id code name price colorRef imageURLs", [
+        arrProduct = await dbQueryListSync(req, res, ProductModel, 5, objProductFilter, "_id code name price colorRef imageURLs remark", [
             {
                 path: 'colorRef', model: 'color',
                 select: {
@@ -176,15 +175,15 @@ router.get('/query', authenticateJWT,  async (req, res) => {
     // .skip(((intCurrentPageCount === 0 ? 1 : intCurrentPageCount) - 1) * 10).limit(intCurrentPageCount === 0 ? 0 : 10);
 })
 
-router.get('/query_code_options', authenticateJWT,  (req, res) => {
-    dbQueryOptions(req, res, ProductModel, {}, "code")
-})
+// router.get('/query_code_options', authenticateJWT,  (req, res) => {
+//     dbQueryOptions(req, res, ProductModel, {}, "code")
+// })
 
-router.get('/query_product_options', authenticateJWT,  (req, res) => {
-    dbQueryOptions(req, res, ProductModel, {}, "name")
-})
+// router.get('/query_product_options', authenticateJWT,  (req, res) => {
+//     dbQueryOptions(req, res, ProductModel, {}, "name")
+// })
 
-router.get('/fuzzy_query_product_code', authenticateJWT,  (req, res) => {
+router.get('/fuzzy_query_product_code', authenticateJWT, (req, res) => {
     let objParameters = {}
     try {
         objParameters = validateRequiredQueryParameters(req, res, {
@@ -215,7 +214,7 @@ router.get('/fuzzy_query_product_code', authenticateJWT,  (req, res) => {
     }).limit(5)
 })
 
-router.get('/fuzzy_query_product_name', authenticateJWT,  (req, res) => {
+router.get('/fuzzy_query_product_name', authenticateJWT, (req, res) => {
     let objParameters = {}
     try {
         objParameters = validateRequiredQueryParameters(req, res, {
@@ -266,6 +265,11 @@ router.post('/add', authenticateJWT, async (req, res) => {
                 type: 'String',
                 isRequired: true,
                 str: '颜色id'
+            },
+            remark: {
+                type: 'String',
+                isRequired: false,
+                str: '备注'
             }
         }, false)
     } catch (err) {
@@ -274,18 +278,19 @@ router.post('/add', authenticateJWT, async (req, res) => {
             message: `${err}`
         })
     }
-    const {code, name, colorRef} = objParameters
-    let objFilter = {code}
-    let objAddData = {
-        code,
-        name,
-        colorRef,
-        imageURLs: []
-    }
+    objParameters.imageURLs = []
+    // const {code, name, colorRef} = objParameters
+    // let objFilter = {code}
+    // let objAddData = {
+    //     code,
+    //     name,
+    //     colorRef,
+    //     imageURLs: []
+    // }
     let {files} = req
     if (files && files.length !== 0) {
         try {
-            handleImages(req, res, files, ProductModel, objFilter, objAddData)
+            handleImages(req, res, files, ProductModel, {code: objParameters.code}, objParameters)
         } catch (err) {
             console.log(err)
             return res.status(500).json({
@@ -296,7 +301,7 @@ router.post('/add', authenticateJWT, async (req, res) => {
     } else {
         // todo: update color related product count
         try {
-            await ColorModel.updateOne({_id: objAddData.colorRef}, {$inc: {relatedProductCount: +1}})
+            await ColorModel.updateOne({_id: objParameters.colorRef}, {$inc: {relatedProductCount: +1}})
         } catch (err) {
             console.log(err)
             return res.status(500).json({
@@ -304,7 +309,7 @@ router.post('/add', authenticateJWT, async (req, res) => {
                 message: `添加失败`
             })
         }
-        await dbAddUnique(req, res, ProductModel, objFilter, objAddData)
+        await dbAddUnique(req, res, ProductModel, {code: objParameters.code}, objParameters)
     }
 })
 
@@ -319,23 +324,33 @@ router.post('/update', authenticateJWT, async (req, res) => {
             },
             code: {
                 type: 'String',
-                isRequired: true,
+                isRequired: false,
                 str: '货号'
             },
             name: {
                 type: 'String',
-                isRequired: true,
+                isRequired: false,
                 str: '名称'
             },
             colorRef: {
                 type: 'String',
-                isRequired: true,
+                isRequired: false,
                 str: '颜色id'
             },
             price: {
                 type: 'String',
-                isRequired: true,
+                isRequired: false,
                 str: '价格'
+            },
+            imageURLs: {
+                type: 'ArrayString',
+                isRequired: false,
+                str: '图片'
+            },
+            remark: {
+                type: 'String',
+                isRequired: false,
+                str: '备注'
             }
         }, false)
     } catch (err) {
@@ -344,11 +359,10 @@ router.post('/update', authenticateJWT, async (req, res) => {
             message: `${err}`
         })
     }
-    const {_id, code, name, colorRef, price} = objParameters
-
-    let imageURLs = []
+    let {_id} = objParameters
     let {files} = req
     if (files && files.length !== 0) {
+        objParameters.imageURLs = []
         let fileTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
 
         if (files.length > 5) {
@@ -362,7 +376,7 @@ router.post('/update', authenticateJWT, async (req, res) => {
             if (fileTypes.indexOf(files[i].mimetype) === -1) {
                 return res.status(500).json({
                     err_code: 1,
-                    message: `图片类型${files[i].mimeType}不被接受`
+                    message: `图片类型${files[i].mimetype}不被接受`
                 })
             }
         }
@@ -371,7 +385,7 @@ router.post('/update', authenticateJWT, async (req, res) => {
             let fileName = `${files[i].filename}.${files[i].originalname.split(".").pop()}`
             try {
                 await fs.renameSync(`./dist/${files[i].filename}`, `./public/images/${fileName}`)
-                imageURLs.push(fileName)
+                objParameters.imageURLs.push(fileName)
             } catch (err) {
                 return res.status(500).json({
                     err_code: 1,
@@ -383,31 +397,40 @@ router.post('/update', authenticateJWT, async (req, res) => {
 
     const session = await ProductModel.startSession()
     await session.withTransaction(async () => {
+        // let productDoc = await ProductModel.findOne({_id})
         const productDoc = await ProductModel.findOne({_id})
-        const preColorRef = productDoc.colorRef
-        // model.findOne({_id: {$ne: _id}, ...objFilter}
-        const uniqueDoc = await ProductModel.findOne({_id: {$ne: _id}, code}, {}, {session})
-        if (uniqueDoc) {
-            return res.status(500).json({
-                err_code: 2,
-                message: `货号${code}已存在`
-            })
-            // throw new Error(`货号${code}已存在`)
+        if (!productDoc) return res.status(500).json({
+            err_code: 2,
+            message: `商品不存在`
+        })
+        if (objParameters.code) {
+            // model.findOne({_id: {$ne: _id}, ...objFilter}
+            const uniqueDoc = await ProductModel.findOne({_id: {$ne: _id}, code: objParameters.code}, {}, {session})
+            if (uniqueDoc) {
+                return res.status(500).json({
+                    err_code: 2,
+                    message: `货号${objParameters.code}已存在`
+                })
+                // throw new Error(`货号${code}已存在`)
+            }
         }
-        await ColorModel.updateOne({_id: preColorRef}, {$inc: {relatedProductCount: -1}}, {session})
-        await ColorModel.updateOne({_id: colorRef}, {$inc: {relatedProductCount: +1}}, {session})
-        await ProductModel.updateOne({_id}, {code, name, colorRef, price, imageURLs}, {session})
-        // update suc, rm old files
-        if (imageURLs.length !== 0) {
+        if (objParameters.colorRef) {
+            const preColorRef = productDoc.colorRef
+            if (preColorRef !== objParameters.colorRef) {
+                await ColorModel.updateOne({_id: preColorRef}, {$inc: {relatedProductCount: -1}}, {session})
+                await ColorModel.updateOne({_id: objParameters.colorRef}, {$inc: {relatedProductCount: +1}}, {session})
+            }
+        }
+        if (objParameters.imageURLs) {
             const preImageURLs = productDoc.imageURLs
             for (let i = 0; i < preImageURLs.length; i++) {
                 const preImageURL = preImageURLs[i]
-                fs.rm(`./public/images/${preImageURL}`, (err) => {
-                    if (err) console.log(err)
+                fs.unlink(`./public/images/${preImageURL}`, (err) => {
+                    if (err) throw err
                 })
             }
         }
-        // update suc, rm old files
+        await ProductModel.updateOne({_id}, objParameters, {session})
         return res.status(200).json({
             err_code: 0,
             message: '操作成功'
@@ -476,12 +499,12 @@ router.get('/delete', authenticateJWT, async (req, res) => {
         await ProductSubModel.updateMany({productRef: {$in: objFilter._id}}, {productRef: undefinedProductId}, {session})
         const deleteRes = await ProductModel.deleteMany({_id: {$in: objFilter._id}}, {session})
         // delete suc, rm img
-        const imageURLs = []
+        let imageURLs = []
         for (let i = 0; i < productDoc.length; i++) {
-            imageURLs.push(productDoc[i].imageURLs.toString())
+            imageURLs = [...imageURLs, ...productDoc[i].imageURLs]
         }
         for (let i = 0; i < imageURLs.length; i++) {
-            fs.rm(imageURLs[i], (err) => {
+            fs.unlink(imageURLs[i], (err) => {
                 if (err) console.log(err)
             })
         }

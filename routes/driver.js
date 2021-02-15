@@ -38,7 +38,8 @@ router.get('/query', authenticateJWT,  (req, res) => {
                 type: 'String',
                 isRequired: false,
                 str: '车牌'
-            }
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({
@@ -50,9 +51,9 @@ router.get('/query', authenticateJWT,  (req, res) => {
     dbQueryList(req, res, DriverModel, 10, objFilter)
 })
 
-router.get('/query_driver_options', authenticateJWT,  (req, res) => {
-    dbQueryOptions(req, res, DriverModel, {}, "name")
-})
+// router.get('/query_driver_options', authenticateJWT,  (req, res) => {
+//     dbQueryOptions(req, res, DriverModel, {}, "name")
+// })
 
 router.get('/fuzzy_query_driver_name', authenticateJWT,  (req, res) => {
     let objParameters = {}
@@ -103,7 +104,8 @@ router.get('/add', authenticateJWT,  async (req, res) => {
                 type: 'String',
                 isRequired: true,
                 str: '车牌'
-            }
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({
@@ -137,7 +139,8 @@ router.get('/update', authenticateJWT,  (req, res) => {
                 type: 'String',
                 isRequired: false,
                 str: '车牌'
-            }
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({
@@ -162,7 +165,8 @@ router.get('/delete', authenticateJWT,  async (req, res) => {
                 type: 'StringArray',
                 isRequired: true,
                 str: '司机id'
-            }
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({

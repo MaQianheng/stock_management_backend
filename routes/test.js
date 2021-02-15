@@ -1,10 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose')
+const {authenticateJWT} = require("../functions/validate");
 const {OrderModel} = require("../db/db_models");
-const {SaleModel} = require("../db/db_models");
-const {ProductSubModel} = require("../db/db_models");
-const {ShelfModel} = require("../db/db_models");
 const {ColorModel} = require("../db/db_models");
 const {ProductModel} = require("../db/db_models");
 const {DriverModel} = require("../db/db_models");
@@ -14,7 +12,7 @@ const {CustomerModel} = require("../db/db_models");
 const {validateRequiredQueryParameters} = require("../functions/validate");
 const {TestModel} = require('../db/db_models')
 
-router.get('/test', async (req, res) => {
+router.get('/test', authenticateJWT, async (req, res) => {
     // 找不到并不会添加
     // let data = await TestModel.findByIdAndUpdate('600bcaafb925091908fd6a5c', {username: '234', password: '24rff'}).exec()
     // console.log(data)
@@ -109,7 +107,7 @@ router.get('/test', async (req, res) => {
      */
 })
 
-router.get('/test400', async (req, res) => {
+router.get('/test400', authenticateJWT, async (req, res) => {
     TestModel({username: '111', password: '222'}).save((err, data) => {
         if (err) {
             return res.status(400).json({
@@ -124,7 +122,7 @@ router.get('/test400', async (req, res) => {
     })
 })
 
-router.get('/session', async (req, res) => {
+router.get('/session', authenticateJWT, async (req, res) => {
 
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -214,7 +212,7 @@ router.get('/session', async (req, res) => {
 // visible outside of the transaction.
 })
 
-router.get('/with_transaction', async (req, res) => {
+router.get('/with_transaction', authenticateJWT, async (req, res) => {
     const session = await TestModel.startSession()
     await session.withTransaction(async () => {
         let doc = await TestModel({username: '111', password: '222', name: '333'}).save({session})
@@ -229,7 +227,7 @@ router.get('/with_transaction', async (req, res) => {
     })
 })
 
-router.get('/delete_all', async (req, res) => {
+router.get('/delete_all', authenticateJWT, async (req, res) => {
     TestModel.deleteMany({}, {}, (err, data) => {
         if (err) {
             return res.status(500).json({
@@ -244,7 +242,7 @@ router.get('/delete_all', async (req, res) => {
     })
 })
 
-router.get('/add_random_customer_data', (req, res) => {
+router.get('/add_random_customer_data', authenticateJWT, (req, res) => {
     const arr = []
     for (let i = 0; i < 500; i++) {
         arr.push({name: generateRandomName()})
@@ -261,7 +259,7 @@ router.get('/add_random_customer_data', (req, res) => {
     })
 })
 
-router.get('/add_random_supplier_data', (req, res) => {
+router.get('/add_random_supplier_data', authenticateJWT, (req, res) => {
     const arr = []
     for (let i = 0; i < 500; i++) {
         arr.push({
@@ -282,7 +280,7 @@ router.get('/add_random_supplier_data', (req, res) => {
     })
 })
 
-router.get('/add_random_driver_data', (req, res) => {
+router.get('/add_random_driver_data', authenticateJWT, (req, res) => {
     const arr = []
     for (let i = 0; i < 500; i++) {
         arr.push({
@@ -303,7 +301,7 @@ router.get('/add_random_driver_data', (req, res) => {
     })
 })
 
-router.get('/add_random_product_data', async (req, res) => {
+router.get('/add_random_product_data', authenticateJWT, async (req, res) => {
     const arrData = []
     const objColorRefIncCount = {}
     for (let i = 0; i < 500; i++) {
@@ -337,7 +335,7 @@ router.get('/add_random_product_data', async (req, res) => {
     })
 })
 
-router.get('/update_random_product_data', async (req, res) => {
+router.get('/update_random_product_data', authenticateJWT, async (req, res) => {
     const doc = await ProductModel.find({})
     console.log(doc.length)
     for (let i = 0; i < doc.length; i++) {

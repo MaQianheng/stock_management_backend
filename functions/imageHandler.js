@@ -31,7 +31,7 @@ exports.handleImagesSync = (req, res, files) => {
 
 exports.handleImages = (req, res, files, model, objFilter, objAddData) => {
     const fs = require('fs')
-    let imageURLS = []
+    let imageURLs = []
     let fileTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
     let isTerminated = false
 
@@ -41,7 +41,7 @@ exports.handleImages = (req, res, files, model, objFilter, objAddData) => {
 
     for (let i = 0; i < files.length; i++) {
         if (fileTypes.indexOf(files[i].mimetype) === -1) {
-            throw {message: `图片类型${files[i].mimeType}不被接受`}
+            throw {message: `图片类型${files[i].mimetype}不被接受`}
         }
     }
 
@@ -53,15 +53,15 @@ exports.handleImages = (req, res, files, model, objFilter, objAddData) => {
                 throw {message: err}
             }
             if (!isTerminated) {
-                imageURLS.push(fileName)
-                if (imageURLS.length === files.length) {
+                imageURLs.push(fileName)
+                if (imageURLs.length === files.length) {
                     try {
                         await ColorModel.updateOne({_id: objAddData.colorRef}, {$inc: {relatedProductCount: +1}})
                     } catch (err) {
                         throw {message: err}
                     }
-                    objAddData.imageURLs = imageURLS
-                    dbAddUnique(req, res, model, objFilter, objAddData)
+                    objAddData.imageURLs = imageURLs
+                    await dbAddUnique(req, res, model, objFilter, objAddData)
                 }
             }
         })

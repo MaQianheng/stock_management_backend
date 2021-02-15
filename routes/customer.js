@@ -56,9 +56,9 @@ router.get('/add', authenticateJWT,  async (req, res) => {
     await dbAddUnique(req, res, CustomerModel, {name: objFilter.name}, objFilter)
 })
 
-router.get('/query_customer_options', authenticateJWT,  (req, res) => {
-    dbQueryOptions(req, res, CustomerModel, {}, "customer")
-})
+// router.get('/query_customer_options', authenticateJWT,  (req, res) => {
+//     dbQueryOptions(req, res, CustomerModel, {}, "customer")
+// })
 
 router.get('/fuzzy_query_customer_name', authenticateJWT,  (req, res) => {
     let objParameters = {}
@@ -68,8 +68,7 @@ router.get('/fuzzy_query_customer_name', authenticateJWT,  (req, res) => {
                 type: 'String',
                 isRequired: true,
                 str: '客户名称'
-            },
-            arrLevelRange: [0, 0]
+            }
         })
     } catch (err) {
         return res.status(500).json({
@@ -90,7 +89,6 @@ router.get('/fuzzy_query_customer_name', authenticateJWT,  (req, res) => {
             data
         })
     }).limit(5)
-    // clubName: `/${clubName}/`
 })
 
 router.get('/update', authenticateJWT,  async (req, res) => {

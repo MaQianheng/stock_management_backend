@@ -1,4 +1,5 @@
 const express = require('express');
+const {authenticateJWT} = require("../functions/validate");
 const {SaleModel} = require("../db/db_models");
 const {undefinedSupplierId} = require("../db/db_models");
 const {dbQueryOptions} = require("../functions/db_func");
@@ -16,15 +17,25 @@ const {dbQueryList, dbAddUnique, dbUpdateUniqueById, dbDeleteById} = require('..
  *  2: user error
  */
 
-router.get('/query', (req, res) => {
+router.get('/query', authenticateJWT, (req, res) => {
+    try {
+        validateRequiredQueryParameters(req, res, {
+            arrLevelRange: [0, 0]
+        })
+    } catch (err) {
+        return res.status(500).json({
+            err_code: 1,
+            message: `${err}`
+        })
+    }
     dbQueryList(req, res, SupplierModel, 12, {_id: {$ne: undefinedSupplierId}})
 })
 
-router.get('/query_supplier_options', (req, res) => {
-    dbQueryOptions(req, res, SupplierModel, {}, "name")
-})
+// router.get('/query_supplier_options', authenticateJWT, (req, res) => {
+//     dbQueryOptions(req, res, SupplierModel, {}, "name")
+// })
 
-router.get('/fuzzy_query_supplier_name', (req, res) => {
+router.get('/fuzzy_query_supplier_name', authenticateJWT, (req, res) => {
     let objParameters = {}
     try {
         objParameters = validateRequiredQueryParameters(req, res, {
@@ -40,7 +51,7 @@ router.get('/fuzzy_query_supplier_name', (req, res) => {
             message: `${err}`
         })
     }
-    SupplierModel.find({supplierName: {$regex: eval(`/${objParameters.supplierName}/`)}}, '_id name supplierName', {},(err, data) => {
+    SupplierModel.find({supplierName: {$regex: eval(`/${objParameters.supplierName}/`)}}, '_id name supplierName', {}, (err, data) => {
         if (err) {
             console.log(err)
             return res.status(500).json({
@@ -55,37 +66,7 @@ router.get('/fuzzy_query_supplier_name', (req, res) => {
     }).limit(5)
 })
 
-router.get('/query_customer_name', (req, res) => {
-    let objParameters = {}
-    try {
-        objParameters = validateRequiredQueryParameters(req, res, {
-            supplierName: {
-                type: 'String',
-                isRequired: true,
-                str: '供应商名称'
-            }
-        })
-    } catch (err) {
-        return res.status(500).json({
-            err_code: 1,
-            message: `${err}`
-        })
-    }
-    SupplierModel.find({supplierName: `/${objParameters.supplierName}/`}, (err, data) => {
-        if (err) {
-            return res.status(500).json({
-                err_code: 1,
-                data: []
-            })
-        }
-        return res.status(200).json({
-            err_code: 0,
-            data
-        })
-    })
-})
-
-router.get('/add', async (req, res) => {
+router.get('/add', authenticateJWT, async (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -108,7 +89,8 @@ router.get('/add', async (req, res) => {
                 type: 'String',
                 isRequired: false,
                 str: '备注'
-            }
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({
@@ -119,7 +101,7 @@ router.get('/add', async (req, res) => {
     await dbAddUnique(req, res, SupplierModel, {supplierName: objFilter.supplierName}, objFilter)
 })
 
-router.get('/update', (req, res) => {
+router.get('/update', authenticateJWT, (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -147,7 +129,8 @@ router.get('/update', (req, res) => {
                 type: 'String',
                 isRequired: false,
                 str: '备注'
-            }
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({
@@ -158,7 +141,7 @@ router.get('/update', (req, res) => {
     dbUpdateUniqueById(req, res, SupplierModel, objFilter._id, {supplierName: objFilter.supplierName}, objFilter)
 })
 
-router.get('/delete', async (req, res) => {
+router.get('/delete', authenticateJWT, async (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -166,7 +149,8 @@ router.get('/delete', async (req, res) => {
                 type: 'StringArray',
                 isRequired: true,
                 str: '供应商id'
-            }
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({

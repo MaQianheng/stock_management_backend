@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jst = require('jsonwebtoken');
+const {authenticateJWT} = require("../functions/validate");
 // filter:过滤数据
 const filter = {password: 0, __v: 0};
 
@@ -17,7 +18,7 @@ const {undefinedUserId, UserModel} = require("../db/db_models");
  *  2: user error
  */
 
-router.get('/query', async (req, res) => {
+router.get('/query', authenticateJWT, async (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -30,7 +31,8 @@ router.get('/query', async (req, res) => {
                 type: 'String',
                 isRequired: false,
                 str: '管理员姓名'
-            }
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({
@@ -99,7 +101,7 @@ router.get('/query', async (req, res) => {
     // }
 })
 
-router.get('/fuzzy_query_operator_name', (req, res) => {
+router.get('/fuzzy_query_operator_name', authenticateJWT, (req, res) => {
     let objParameters = {}
     try {
         objParameters = validateRequiredQueryParameters(req, res, {
@@ -107,7 +109,8 @@ router.get('/fuzzy_query_operator_name', (req, res) => {
                 type: 'String',
                 isRequired: true,
                 str: '管理员名称'
-            }
+            },
+            // arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({
@@ -131,11 +134,11 @@ router.get('/fuzzy_query_operator_name', (req, res) => {
     // clubName: `/${clubName}/`
 })
 
-router.get('/query_user_options', (req, res) => {
-    dbQueryOptions(req, res, UserModel, {}, "name")
-})
+// router.get('/query_user_options', authenticateJWT, (req, res) => {
+//     dbQueryOptions(req, res, UserModel, {}, "name")
+// })
 
-router.post('/add', async (req, res, next) => {
+router.post('/add', authenticateJWT, async (req, res, next) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -158,7 +161,8 @@ router.post('/add', async (req, res, next) => {
                 type: 'Number',
                 isRequired: true,
                 str: '等级'
-            }
+            },
+            arrLevelRange: [0, 0]
         }, false)
     } catch (err) {
         return res.status(500).json({
@@ -169,7 +173,7 @@ router.post('/add', async (req, res, next) => {
     await dbAddUnique(req, res, UserModel, {username: objFilter.username}, objFilter)
 })
 
-router.post('/update', async (req, res, next) => {
+router.post('/update', authenticateJWT, async (req, res, next) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -197,7 +201,8 @@ router.post('/update', async (req, res, next) => {
                 type: '',
                 isRequired: true,
                 str: '等级'
-            }
+            },
+            arrLevelRange: [0, 0]
         }, false)
     } catch (err) {
         return res.status(500).json({
@@ -228,7 +233,8 @@ router.post('/login', function (req, res, next) {
                 type: 'String',
                 isRequired: true,
                 str: '密码'
-            }
+            },
+            arrLevelRange: [0, 0]
         }, false)
     } catch (err) {
         return res.status(500).json({
@@ -256,6 +262,7 @@ router.post('/login', function (req, res, next) {
         //     console.log(err.message)
         // }
         //
+        // http://192.168.1.244:3000/sale/query_history?action=&startedTimeStamp=1609459200000&endedTimeStamp=1613007763765&productCode=&productName=&colorRef=&warehouseRef=&shelfRef=&operatorRef=60224ab95d935cbe5b33ff63&driverRef=&currentPageCount=1
         // res.cookie('userid',user._id,{maxAge:1000*60*60*24})
         return res.status(200).json({
             err_code: 0,

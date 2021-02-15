@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose')
+const {authenticateJWT} = require("../functions/validate");
 const {ShelfModel} = require("../db/db_models");
 const {undefinedWarehouseId} = require("../db/db_models");
 
 const {WarehouseModel} = require('../db/db_models')
 const {validateRequiredQueryParameters} = require('../functions/validate')
 
-const {dbQueryList, dbAddUnique, dbQueryOptions, dbUpdateUniqueById, dbDeleteById} = require('../functions/db_func')
+const {dbQueryList, dbAddUnique, dbQueryOptions, dbUpdateUniqueById} = require('../functions/db_func')
 
 /**
  * err_code:
@@ -16,7 +17,7 @@ const {dbQueryList, dbAddUnique, dbQueryOptions, dbUpdateUniqueById, dbDeleteByI
  *  2: user error
  */
 
-router.get('/query', (req, res) => {
+router.get('/query', authenticateJWT, (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -35,11 +36,11 @@ router.get('/query', (req, res) => {
     dbQueryList(req, res, WarehouseModel, 5, objFilter)
 })
 
-router.get('/query_warehouse_options', (req, res) => {
+router.get('/query_warehouse_options', authenticateJWT, (req, res) => {
     dbQueryOptions(req, res, WarehouseModel, {}, "warehouse")
 })
 
-router.get('/add', async (req, res) => {
+router.get('/add', authenticateJWT, async (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -58,7 +59,7 @@ router.get('/add', async (req, res) => {
     await dbAddUnique(req, res, WarehouseModel, {warehouse: objFilter.warehouse}, {warehouse: objFilter.warehouse})
 })
 
-router.get('/update', (req, res) => {
+router.get('/update', authenticateJWT, (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -88,7 +89,7 @@ router.get('/update', (req, res) => {
     dbUpdateUniqueById(req, res, WarehouseModel, objFilter._id, {warehouse: objFilter.warehouse}, {warehouse: objFilter.warehouse})
 })
 
-router.get('/delete', async (req, res) => {
+router.get('/delete', authenticateJWT, async (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {

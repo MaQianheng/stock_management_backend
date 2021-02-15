@@ -2,13 +2,14 @@ const express = require('express');
 const {OrderModel} = require("../db/db_models");
 const router = express.Router();
 const mongoose = require('mongoose')
-const {fromTimeStampToString} = require("../functions/utils");
+const {undefinedSaleId} = require("../db/db_models");
+const {authenticateJWT} = require("../functions/validate");
 const {undefinedProductId} = require("../db/db_models");
 const {dbQueryListSync} = require("../functions/db_func");
 const {ProductModel} = require("../db/db_models");
 const {funcCurrentPage} = require("../functions/utils");
-
-const {ProductSubModel, SaleModel, ShelfModel} = require('../db/db_models')
+const jst = require('jsonwebtoken')
+const {ProductSubModel, SaleModel} = require('../db/db_models')
 
 const {validateRequiredQueryParameters} = require('../functions/validate')
 
@@ -19,7 +20,7 @@ const {validateRequiredQueryParameters} = require('../functions/validate')
  *  2: user error
  */
 
-router.get('/query_history', async (req, res) => {
+router.get('/query_history', authenticateJWT, async (req, res) => {
     let objFilter = {}
     try {
         objFilter = validateRequiredQueryParameters(req, res, {
@@ -78,7 +79,7 @@ router.get('/query_history', async (req, res) => {
     objFilter.timeStamp = `${objFilter.startedTimeStamp}_${objFilter.endedTimeStamp}`
     delete objFilter.startedTimeStamp
     delete objFilter.endedTimeStamp
-    objFilter.saleRef = {$ne: mongoose.Types.ObjectId('601b710943394661fdb6996c')}
+    objFilter.saleRef = {$ne: undefinedSaleId}
     const arrFilterKeys = Object.keys(objFilter)
     for (let i = 0; i < arrFilterKeys.length; i++) {
         const filterKey = arrFilterKeys[i]
@@ -182,11 +183,23 @@ router.get('/query_history', async (req, res) => {
         }],
     }, {
         path: 'productSubRef',
-        populate: [{
-            path: "productRef",
-            populate: {path: 'colorRef', select: {'_id': 0, 'color': 1}}
-        }, {path: "shelfRef", select: {'_id': 1}}]
+        populate: [
+            {
+                path: "productRef",
+                populate: {
+                    path: 'colorRef',
+                    select: {'_id': 0, 'color': 1}
+                }
+            },
+            {
+                path: "shelfRef",
+                select: {'_id': 1}
+            }
+        ]
     }])
+    // return res.status(200).json({
+    //     ordersDoc
+    // })
 
     const objData = {}
     for (let i = 0; i < ordersDoc.length; i++) {
@@ -202,11 +215,11 @@ router.get('/query_history', async (req, res) => {
             }
             switch (action) {
                 case 0:
-                    objTmp.driverRef = saleRef.driverRef
-                    objTmp.deliveryFee = saleRef.deliveryFee
                     objTmp.supplierName = saleRef.supplierRef.supplierName
                     break
                 case 1:
+                    objTmp.driverRef = saleRef.driverRef
+                    objTmp.deliveryFee = saleRef.deliveryFee
                     objTmp.customerName = saleRef.customerRef.name
                     break
                 default:
@@ -216,7 +229,7 @@ router.get('/query_history', async (req, res) => {
         }
         const orderRef = orderDoc._id
         const {oriWeight, price, operateWeight, productSubRef} = orderDoc
-        const {productRef} = productSubRef
+        const {productRef, shelfRef, remainingWeight} = productSubRef
         if (!(productRef._id in objData[_id].product)) {
             objData[_id].totalCount += 1
             objData[_id].product[productRef._id] = {
@@ -232,11 +245,11 @@ router.get('/query_history', async (req, res) => {
         objData[_id].product[productRef._id].order.push(
             {
                 orderRef,
-                shelfRef: productSubRef.shelfRef,
+                shelfRef,
                 oriWeight,
                 operateWeight,
                 afterOperateWeight: orderDoc.saleRef.action === 0 ? oriWeight + operateWeight : oriWeight - operateWeight,
-                remainingWeight: productRef.remainingWeight,
+                remainingWeight,
                 price,
             }
         )
@@ -256,7 +269,7 @@ router.get('/query_history', async (req, res) => {
     })
 })
 
-router.get('/query_product', async (req, res) => {
+router.get('/query_product', authenticateJWT, async (req, res) => {
     let objProductFilter = {}
     try {
         objProductFilter = validateRequiredQueryParameters(req, res, {
@@ -393,7 +406,7 @@ router.get('/query_product', async (req, res) => {
     // ]
 })
 
-router.get('/add', async (req, res) => {
+router.get('/add', authenticateJWT, async (req, res) => {
     let objParameters = {}
     try {
         objParameters = validateRequiredQueryParameters(req, res, {
@@ -402,11 +415,11 @@ router.get('/add', async (req, res) => {
                 isRequired: true,
                 str: '操作类型'
             },
-            operatorRef: {
-                type: 'String',
-                isRequired: true,
-                str: '操作员id'
-            },
+            // operatorRef: {
+            //     type: 'String',
+            //     isRequired: true,
+            //     str: '操作员id'
+            // },
             supplierRef: {
                 type: 'String',
                 isRequired: false,
@@ -439,32 +452,33 @@ router.get('/add', async (req, res) => {
             message: `${err}`
         })
     }
+    const {_id} = jst.verify(req.headers.authorization, "qianhengma")
 
-    const {action, operatorRef, supplierRef, customerRef, driverRef, product, deliveryFee} = objParameters
+    const {action, supplierRef, customerRef, driverRef, product, deliveryFee} = objParameters
     const objSaleAddData = {
         action,
-        operatorRef
+        operatorRef: _id
     }
     // 0: in, 1: out
     if (action === 0) {
-        if (!supplierRef || !driverRef) {
+        if (!supplierRef) {
             return res.status(500).json({
                 err_code: 2,
                 message: '操作类型不匹配或缺少必须参数'
             })
         }
         objSaleAddData.supplierRef = supplierRef
-        objSaleAddData.driverRef = driverRef
-        objSaleAddData.deliveryFee = deliveryFee
     }
     if (action === 1) {
-        if (!customerRef) {
+        if (!customerRef || !driverRef || !deliveryFee) {
             return res.status(500).json({
                 err_code: 2,
                 message: '操作类型不匹配或缺少必须参数'
             })
         }
         objSaleAddData.customerRef = customerRef
+        objSaleAddData.driverRef = driverRef
+        objSaleAddData.deliveryFee = deliveryFee
     }
     // /**
     //  * // 0: in, 1: out
