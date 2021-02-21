@@ -88,3 +88,16 @@ exports.fromTimeStampToString = (timeStamp) => {
     let s = time.getSeconds();
     return `${y}-${add0(m)}-${add0(d)} ${add0(h)}:${add0(mm)}:${add0(s)}`
 }
+
+exports.funcGetUpdateCount = (doc, key) => {
+    const obj = {}
+    for (let i = 0; i < doc.length; i++) {
+        let val = doc[i][key]
+        if (!(val in obj)) {
+            obj[val] = 1
+        } else {
+            obj[val] += 1
+        }
+    }
+    return obj
+}

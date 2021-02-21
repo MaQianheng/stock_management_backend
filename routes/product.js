@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require("multer");
 const fs = require('fs');
+const {funcGetUpdateCount} = require("../functions/utils");
 const {authenticateJWT, validateRequiredQueryParameters} = require("../functions/validate");
 const {undefinedProductId} = require("../db/db_models");
 const {handleImages} = require("../functions/imageHandler");
@@ -34,7 +35,8 @@ router.get('/query', authenticateJWT, async (req, res) => {
                 type: 'String',
                 isRequired: false,
                 str: '颜色id'
-            }
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({
@@ -270,7 +272,8 @@ router.post('/add', authenticateJWT, async (req, res) => {
                 type: 'String',
                 isRequired: false,
                 str: '备注'
-            }
+            },
+            arrLevelRange: [0, 0]
         }, false)
     } catch (err) {
         return res.status(500).json({
@@ -351,7 +354,8 @@ router.post('/update', authenticateJWT, async (req, res) => {
                 type: 'String',
                 isRequired: false,
                 str: '备注'
-            }
+            },
+            arrLevelRange: [0, 0]
         }, false)
     } catch (err) {
         return res.status(500).json({
@@ -424,8 +428,7 @@ router.post('/update', authenticateJWT, async (req, res) => {
         if (objParameters.imageURLs) {
             const preImageURLs = productDoc.imageURLs
             for (let i = 0; i < preImageURLs.length; i++) {
-                const preImageURL = preImageURLs[i]
-                fs.unlink(`./public/images/${preImageURL}`, (err) => {
+                fs.unlink(`./public/images/${preImageURLs[i]}`, (err) => {
                     if (err) throw err
                 })
             }
@@ -453,7 +456,8 @@ router.get('/delete', authenticateJWT, async (req, res) => {
                 type: 'StringArray',
                 isRequired: true,
                 str: '商品id'
-            }
+            },
+            arrLevelRange: [0, 0]
         })
     } catch (err) {
         return res.status(500).json({
@@ -476,27 +480,39 @@ router.get('/delete', authenticateJWT, async (req, res) => {
     }
     const session = await ProductModel.startSession()
     await session.withTransaction(async () => {
-        const objColorRefDecCount = {}
-        for (let i = 0; i < productDoc.length; i++) {
-            let {colorRef} = productDoc[i]
-            if (!(colorRef in objColorRefDecCount)) {
-                objColorRefDecCount[colorRef] = 1
-            } else {
-                objColorRefDecCount[colorRef] += 1
-            }
-        }
+        const objColorRefDecCount = funcGetUpdateCount(productDoc, 'colorRef')
+        // for (let i = 0; i < productDoc.length; i++) {
+        //     let {colorRef} = productDoc[i]
+        //     if (!(colorRef in objColorRefDecCount)) {
+        //         objColorRefDecCount[colorRef] = 1
+        //     } else {
+        //         objColorRefDecCount[colorRef] += 1
+        //     }
+        // }
         // update color relatedProductCount
-        let arrColorRef = Object.keys(objColorRefDecCount)
+        const arrColorRef = Object.keys(objColorRefDecCount)
         for (let i = 0; i < arrColorRef.length; i++) {
             const idKey = arrColorRef[i]
             const decVal = objColorRefDecCount[idKey]
-            const warehouseUpdateRes = await ColorModel.findOneAndUpdate({_id: arrColorRef[i]}, {$inc: {relatedProductCount: -+decVal}}, {
+            const colorUpdateRes = await ColorModel.findOneAndUpdate({_id: arrColorRef[i]}, {$inc: {relatedProductCount: -+decVal}}, {
                 session,
                 new: true
             })
-            if (warehouseUpdateRes.relatedProductCount < 0) throw {message: '该颜色下相关商品数量有误'}
+            if (colorUpdateRes.relatedProductCount < 0) throw {message: '该颜色下相关商品数量有误'}
         }
-        await ProductSubModel.updateMany({productRef: {$in: objFilter._id}}, {productRef: undefinedProductId}, {session})
+
+        const productSubDoc = await ProductSubModel.updateMany({productRef: {$in: objFilter._id}}, {productRef: undefinedProductId}, {session})
+        const objShelfRefDecCount = funcGetUpdateCount(productSubDoc, 'shelfRef')
+        const arrShelfRef = Object.keys(objShelfRefDecCount)
+        for (let i = 0; i < arrShelfRef.length; i++) {
+            const idKey = arrShelfRef[i]
+            const decVal = objShelfRefDecCount[idKey]
+            const shelfUpdateRes = await ShelfModel.findOneAndUpdate({_id: arrShelfRef[i]}, {$inc: {relatedProductCount: -+decVal}}, {
+                session,
+                new: true
+            })
+            if (shelfUpdateRes.relatedProductCount < 0) throw {message: '该货架下相关商品数量有误'}
+        }
         const deleteRes = await ProductModel.deleteMany({_id: {$in: objFilter._id}}, {session})
         // delete suc, rm img
         let imageURLs = []
@@ -504,7 +520,7 @@ router.get('/delete', authenticateJWT, async (req, res) => {
             imageURLs = [...imageURLs, ...productDoc[i].imageURLs]
         }
         for (let i = 0; i < imageURLs.length; i++) {
-            fs.unlink(imageURLs[i], (err) => {
+            fs.unlink(`./public/images/${imageURLs[i]}`, (err) => {
                 if (err) console.log(err)
             })
         }

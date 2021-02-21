@@ -9,6 +9,8 @@ const {dbQueryListSync} = require("../functions/db_func");
 const {ProductModel} = require("../db/db_models");
 const {funcCurrentPage} = require("../functions/utils");
 const jst = require('jsonwebtoken')
+const {undefinedDriverId} = require("../db/db_models");
+const {ShelfModel} = require("../db/db_models");
 const {ProductSubModel, SaleModel} = require('../db/db_models')
 
 const {validateRequiredQueryParameters} = require('../functions/validate')
@@ -153,7 +155,13 @@ router.get('/query_history', authenticateJWT, async (req, res) => {
             }
         },
         {$match: objFilter},
-        {$group: {_id: '$saleRef', arrOrderId: {$push: "$_id"}, createdTimeStamp: {$addToSet: "$sale.createdTimeStamp"}}},
+        {
+            $group: {
+                _id: '$saleRef',
+                arrOrderId: {$push: "$_id"},
+                createdTimeStamp: {$addToSet: "$sale.createdTimeStamp"}
+            }
+        },
         // {$sort: {'createdTimeStamp': -1}},
         {$sort: {'createdTimeStamp': -1}}
     ])
@@ -211,7 +219,13 @@ router.get('/query_history', authenticateJWT, async (req, res) => {
             const {createdTimeStamp, action, operatorRef} = saleRef
             // const dateTime = fromTimeStampToString(createdTimeStamp)
             const objTmp = {
-                createdTimeStamp, action, totalWeight, totalPrice, totalCount, operatorName: operatorRef.name, product: {}
+                createdTimeStamp,
+                action,
+                totalWeight,
+                totalPrice,
+                totalCount,
+                operatorName: operatorRef.name,
+                product: {}
             }
             switch (action) {
                 case 0:
@@ -470,14 +484,14 @@ router.get('/add', authenticateJWT, async (req, res) => {
         objSaleAddData.supplierRef = supplierRef
     }
     if (action === 1) {
-        if (!customerRef || !driverRef || !deliveryFee) {
+        if (!customerRef || !deliveryFee) {
             return res.status(500).json({
                 err_code: 2,
                 message: '操作类型不匹配或缺少必须参数'
             })
         }
         objSaleAddData.customerRef = customerRef
-        objSaleAddData.driverRef = driverRef
+        objSaleAddData.driverRef = driverRef ? driverRef : undefinedDriverId
         objSaleAddData.deliveryFee = deliveryFee
     }
     // /**
@@ -532,6 +546,10 @@ router.get('/add', authenticateJWT, async (req, res) => {
                     shelfRef,
                     remainingWeight: operateWeight
                 }).save({session})
+                await ShelfModel.findOneAndUpdate({_id: shelfRef}, {$inc: {relatedProductCount: +1}}, {
+                    session,
+                    new: true
+                })
             }
             const productSubRef = productSubDoc._id
             await OrderModel({saleRef, productSubRef, oriWeight, operateWeight, price: totalPrice}).save({session})

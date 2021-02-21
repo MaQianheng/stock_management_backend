@@ -80,12 +80,12 @@ router.get('/update', authenticateJWT, (req, res) => {
             message: `${err}`
         })
     }
-    if (objFilter._id.indexOf(undefinedWarehouseId) !== -1) {
-        return res.status(500).json({
-            err_code: 2,
-            message: '该数据不可被操作'
-        })
-    }
+    // if (objFilter._id.indexOf(undefinedWarehouseId) !== -1) {
+    //     return res.status(500).json({
+    //         err_code: 2,
+    //         message: '该数据不可被操作'
+    //     })
+    // }
     dbUpdateUniqueById(req, res, WarehouseModel, objFilter._id, {warehouse: objFilter.warehouse}, {warehouse: objFilter.warehouse})
 })
 

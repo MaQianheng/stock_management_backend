@@ -63,10 +63,10 @@ router.get('/query', authenticateJWT, async (req, res) => {
                 let text = ''
                 switch (level) {
                     case 0:
-                        text = '根级管理员'
+                        text = '一级管理员'
                         break
                     case 1:
-                        text = '一级管理员'
+                        text = '二级管理员'
                         break
                     default:
                         break
@@ -210,12 +210,12 @@ router.post('/update', authenticateJWT, async (req, res, next) => {
             message: `${err}`
         })
     }
-    if (objFilter._id.indexOf(undefinedUserId) !== -1) {
-        return res.status(500).json({
-            err_code: 2,
-            message: '该数据不可被操作'
-        })
-    }
+    // if (objFilter._id.indexOf(undefinedUserId) !== -1) {
+    //     return res.status(500).json({
+    //         err_code: 2,
+    //         message: '该数据不可被操作'
+    //     })
+    // }
     objFilter.level = objFilter.level.value
     dbUpdateUniqueById(req, res, UserModel, objFilter._id, {username: objFilter.username}, objFilter)
 })
@@ -233,8 +233,7 @@ router.post('/login', function (req, res, next) {
                 type: 'String',
                 isRequired: true,
                 str: '密码'
-            },
-            arrLevelRange: [0, 0]
+            }
         }, false)
     } catch (err) {
         return res.status(500).json({

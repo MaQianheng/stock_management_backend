@@ -1,8 +1,8 @@
 const express = require('express');
+const {dbQueryOptions} = require("../functions/db_func");
 const {authenticateJWT} = require("../functions/validate");
 const {undefinedCustomerId} = require("../db/db_models");
 const {SaleModel} = require("../db/db_models");
-const {dbQueryOptions} = require("../functions/db_func");
 const router = express.Router();
 
 const {CustomerModel} = require('../db/db_models')
@@ -56,9 +56,9 @@ router.get('/add', authenticateJWT,  async (req, res) => {
     await dbAddUnique(req, res, CustomerModel, {name: objFilter.name}, objFilter)
 })
 
-// router.get('/query_customer_options', authenticateJWT,  (req, res) => {
-//     dbQueryOptions(req, res, CustomerModel, {}, "customer")
-// })
+router.get('/query_customer_options', authenticateJWT,  (req, res) => {
+    dbQueryOptions(req, res, CustomerModel, {}, "customer")
+})
 
 router.get('/fuzzy_query_customer_name', authenticateJWT,  (req, res) => {
     let objParameters = {}
@@ -118,12 +118,12 @@ router.get('/update', authenticateJWT,  async (req, res) => {
             message: `${err}`
         })
     }
-    if (objFilter._id.indexOf(String(undefinedCustomerId)) !== -1) {
-        return res.status(500).json({
-            err_code: 2,
-            message: '该数据不可被操作'
-        })
-    }
+    // if (objFilter._id.indexOf(String(undefinedCustomerId)) !== -1) {
+    //     return res.status(500).json({
+    //         err_code: 2,
+    //         message: '该数据不可被操作'
+    //     })
+    // }
     dbUpdateUniqueById(req, res, CustomerModel, objFilter._id, {name: objFilter.name}, objFilter)
 })
 

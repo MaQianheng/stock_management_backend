@@ -51,9 +51,9 @@ router.get('/query', authenticateJWT,  (req, res) => {
     dbQueryList(req, res, DriverModel, 10, objFilter)
 })
 
-// router.get('/query_driver_options', authenticateJWT,  (req, res) => {
-//     dbQueryOptions(req, res, DriverModel, {}, "name")
-// })
+router.get('/query_driver_options', authenticateJWT,  (req, res) => {
+    dbQueryOptions(req, res, DriverModel, {}, "name")
+})
 
 router.get('/fuzzy_query_driver_name', authenticateJWT,  (req, res) => {
     let objParameters = {}
@@ -97,12 +97,12 @@ router.get('/add', authenticateJWT,  async (req, res) => {
             },
             phone: {
                 type: 'Number',
-                isRequired: true,
+                isRequired: false,
                 str: '电话'
             },
             plate: {
                 type: 'String',
-                isRequired: true,
+                isRequired: false,
                 str: '车牌'
             },
             arrLevelRange: [0, 0]
@@ -148,12 +148,12 @@ router.get('/update', authenticateJWT,  (req, res) => {
             message: `${err}`
         })
     }
-    if (objFilter._id.indexOf(undefinedDriverId) !== -1) {
-        return res.status(500).json({
-            err_code: 2,
-            message: '该数据不可被操作'
-        })
-    }
+    // if (objFilter._id.indexOf(undefinedDriverId) !== -1) {
+    //     return res.status(500).json({
+    //         err_code: 2,
+    //         message: '该数据不可被操作'
+    //     })
+    // }
     dbUpdateUniqueById(req, res, DriverModel, objFilter._id, {plate: objFilter.plate}, objFilter)
 })
 

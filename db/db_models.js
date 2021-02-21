@@ -208,8 +208,8 @@ const ColorModel = mongoose.model('color', mongoose.Schema({
 
 const DriverModel = mongoose.model('driver', mongoose.Schema({
     name: {type: String, required: true},
-    phone: {type: String, required: true},
-    plate: {type: String, required: true},
+    phone: {type: String, required: false, default: '无'},
+    plate: {type: String, required: false, default: '无'},
     toBePaid: {type: Number, required: true, default: 0}
 }))
 

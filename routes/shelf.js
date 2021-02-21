@@ -215,12 +215,12 @@ router.get('/update', authenticateJWT, (req, res) => {
             message: `${err}`
         })
     }
-    if (objParameters._id.indexOf(undefinedShelfId) !== -1) {
-        return res.status(500).json({
-            err_code: 2,
-            message: '该数据不可被操作'
-        })
-    }
+    // if (objParameters._id.indexOf(undefinedShelfId) !== -1) {
+    //     return res.status(500).json({
+    //         err_code: 2,
+    //         message: '该数据不可被操作'
+    //     })
+    // }
     dbUpdateUniqueById(req, res, ShelfModel, objParameters._id, {
         warehouseRef: objParameters.warehouseRef,
         shelf: objParameters.shelfName
