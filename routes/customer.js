@@ -57,7 +57,7 @@ router.get('/add', authenticateJWT,  async (req, res) => {
 })
 
 router.get('/query_customer_options', authenticateJWT,  (req, res) => {
-    dbQueryOptions(req, res, CustomerModel, {}, "customer")
+    dbQueryOptions(req, res, CustomerModel, {}, "name")
 })
 
 router.get('/fuzzy_query_customer_name', authenticateJWT,  (req, res) => {

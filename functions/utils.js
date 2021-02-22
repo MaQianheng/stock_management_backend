@@ -101,3 +101,15 @@ exports.funcGetUpdateCount = (doc, key) => {
     }
     return obj
 }
+
+// 升序: ASC, 降序: DES
+exports.funcObjSortBySpecificKey = (obj, key, type = 'DES') => {
+    switch (type) {
+        case "DES":
+            return Object.keys(obj).sort((pre, nex) => (obj[nex][key] - obj[pre][key]))
+        case 'ASC':
+            return Object.keys(obj).sort((pre, nex) => (obj[pre][key] - obj[nex][key]))
+        default:
+            return Object.keys(obj)
+    }
+}

@@ -32,7 +32,7 @@ router.get('/query', authenticateJWT, (req, res) => {
 })
 
 router.get('/query_supplier_options', authenticateJWT, (req, res) => {
-    dbQueryOptions(req, res, SupplierModel, {}, "name")
+    dbQueryOptions(req, res, SupplierModel, {}, "supplierName")
 })
 
 router.get('/fuzzy_query_supplier_name', authenticateJWT, (req, res) => {

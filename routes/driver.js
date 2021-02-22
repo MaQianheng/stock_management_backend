@@ -1,4 +1,5 @@
 const express = require('express');
+const {dbAdd} = require("../functions/db_func");
 const {authenticateJWT} = require("../functions/validate");
 const router = express.Router();
 const {undefinedDriverId} = require("../db/db_models");
@@ -113,7 +114,11 @@ router.get('/add', authenticateJWT,  async (req, res) => {
             message: `${err}`
         })
     }
-    await dbAddUnique(req, res, DriverModel, {plate: objFilter.plate}, objFilter)
+    if (objFilter.plate) {
+        await dbAddUnique(req, res, DriverModel, {plate: objFilter.plate}, objFilter)
+    } else {
+        await dbAdd(req, res, DriverModel, objFilter)
+    }
 })
 
 router.get('/update', authenticateJWT,  (req, res) => {
