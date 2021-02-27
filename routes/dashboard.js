@@ -146,9 +146,12 @@ router.get('/query', authenticateJWT, async (req, res) => {
         for (let i = 0; i < 5; i++) {
             let customerKey = arrSortedCustomerKey[i]
             let productKey = arrSortedProductKey[i]
-            objCustomerInWeight[customerKey] = tmpObjCustomerInWeight[customerKey]
-            objProductInOutWeight[productKey] = tmpObjProductInOutWeight[productKey]
-            objProductInOutWeight[productKey].inOutPercentage = Number(objProductInOutWeight[productKey].out / objProductInOutWeight[productKey].in * 100).toFixed(2)
+            if (customerKey) objCustomerInWeight[customerKey] = tmpObjCustomerInWeight[customerKey]
+            if (productKey) {
+                objProductInOutWeight[productKey] = tmpObjProductInOutWeight[productKey]
+                objProductInOutWeight[productKey].inOutPercentage = Number(objProductInOutWeight[productKey].out / objProductInOutWeight[productKey].in * 100).toFixed(2)
+            }
+            if (!arrSortedCustomerKey[i + 1] && !arrSortedProductKey[i + 1]) break
         }
         resSucCallBack()
     }).catch((err) => {

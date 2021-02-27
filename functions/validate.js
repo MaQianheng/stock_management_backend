@@ -84,7 +84,6 @@ exports.validateRequiredQueryParameters = (req, res, objParameters, isGet = true
             if (value === "0" || !value) continue
             if (!validateObjectId(value) && value.indexOf(',') === -1) throw `非有效id：${objValue.str}`
         }
-
         try {
             value = funcConvertFormat(value, objValue.type)
         } catch (err) {

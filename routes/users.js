@@ -134,9 +134,9 @@ router.get('/fuzzy_query_operator_name', authenticateJWT, (req, res) => {
     // clubName: `/${clubName}/`
 })
 
-// router.get('/query_user_options', authenticateJWT, (req, res) => {
-//     dbQueryOptions(req, res, UserModel, {}, "name")
-// })
+router.get('/query_user_options', authenticateJWT, (req, res) => {
+    dbQueryOptions(req, res, UserModel, {}, "name")
+})
 
 router.post('/add', authenticateJWT, async (req, res, next) => {
     let objFilter = {}

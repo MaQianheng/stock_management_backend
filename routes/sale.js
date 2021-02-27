@@ -129,6 +129,7 @@ router.get('/query_history', authenticateJWT, async (req, res) => {
             }
         }
     }
+    console.log(objFilter)
     let saleOrderDoc = await OrderModel.aggregate([
         {
             $lookup: {
