@@ -1,13 +1,8 @@
 const express = require('express');
-const {dbAdd} = require("../functions/db_func");
-const {authenticateJWT} = require("../functions/validate");
 const router = express.Router();
-const {undefinedDriverId} = require("../db/db_models");
-
-const {DriverModel, DriverAccountingModel, SaleModel} = require('../db/db_models')
-const {validateRequiredQueryParameters} = require('../functions/validate')
-
-const {dbQueryList, dbAddUnique, dbUpdateUniqueById, dbQueryOptions} = require('../functions/db_func')
+const {authenticateJWT, validateRequiredQueryParameters} = require("../functions/validate");
+const {DriverModel, DriverAccountingModel, SaleModel, undefinedDriverId} = require('../db/db_models')
+const {dbQueryList, dbAddUnique, dbUpdateUniqueById, dbQueryOptions, dbAdd} = require('../functions/db_func')
 
 /**
  * err_code:

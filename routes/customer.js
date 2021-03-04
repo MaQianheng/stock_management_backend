@@ -1,14 +1,8 @@
-const express = require('express');
-const {dbQueryOptions} = require("../functions/db_func");
-const {authenticateJWT} = require("../functions/validate");
-const {undefinedCustomerId} = require("../db/db_models");
-const {SaleModel} = require("../db/db_models");
-const router = express.Router();
-
-const {CustomerModel} = require('../db/db_models')
-const {validateRequiredQueryParameters} = require('../functions/validate')
-
-const {dbQueryList, dbAddUnique, dbUpdateUniqueById} = require('../functions/db_func')
+const express = require('express')
+const router = express.Router()
+const {undefinedCustomerId, SaleModel, CustomerModel} = require('../db/db_models')
+const {validateRequiredQueryParameters, authenticateJWT} = require('../functions/validate')
+const {dbQueryList, dbAddUnique, dbUpdateUniqueById, dbQueryOptions} = require('../functions/db_func')
 
 /**
  * err_code:
@@ -166,4 +160,4 @@ router.get('/delete', authenticateJWT,  async (req, res) => {
     })
 })
 
-module.exports = router;
+module.exports = router

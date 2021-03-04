@@ -42,6 +42,7 @@ exports.dbAddSync = (model, objAddData) => {
 
 exports.dbIfDataUniqueSync = async (model, objFilter) => {
     objFilter = filterObjValue(objFilter)
+    objFilter.isDeleted = false
     return await model.findOne(objFilter).exec()
 }
 
@@ -75,6 +76,7 @@ exports.dbQueryList = (req, res, model, perPageCount = 0, objFilter = {}, popula
     objFilter = filterObjValue(objFilter)
     let intCurrentPageCount = funcCurrentPage(req)
 
+    // objFilter.isDeleted = false
     model.countDocuments(objFilter, function (err, dataCount) {
         if (err) {
             return res.status(500).json({
@@ -108,7 +110,8 @@ exports.dbQueryList = (req, res, model, perPageCount = 0, objFilter = {}, popula
 exports.dbQueryOptions = (req, res, model, objFilter, strTextField) => {
     objFilter = filterObjValue(objFilter)
     // 如果id是0，则代表请求全部
-    if (objFilter._id === "0") delete objFilter._id
+    if (!objFilter._id) delete objFilter._id
+    objFilter.isDeleted = false
     model.find(objFilter, {__v: 0}, (err, data) => {
         if (err) {
             return res.status(500).json({
@@ -167,6 +170,7 @@ exports.dbUpdateById = (req, res, model, objFilter, objUpdateData) => {
 
 exports.dbUpdateUniqueById = (req, res, model, _id, objFilter, objUpdateData) => {
     objFilter = filterObjValue(objFilter)
+    objFilter.isDeleted = false
     // check if there is any other data except this data that with ${_id}
     model.findOne({_id: {$ne: _id}, ...objFilter}, (err, data) => {
         if (err) {
@@ -185,45 +189,20 @@ exports.dbUpdateUniqueById = (req, res, model, _id, objFilter, objUpdateData) =>
     })
 }
 
-exports.dbUpdateCountSync = async (model, _id, strField, action = 0, count = 1) => {
-
-    // model.findOneAndUpdate({_id}, {$inc: {total: 1}}, function (err) {
-    //     if (err) return console.log(err);
-    //     res.json({status: 'ok', msg: '发布成功'})
-    // })
-    let data = await model.findOne({_id}).exec()
-    if (!data) throw {message: '数据不存在'}
-    // 0: +, 1: -
-    switch (action) {
-        case 0:
-            data[strField] += count
-            break
-        case 1:
-            if (data[strField] - count < 0) throw {
-                myCode: 1,
-                message: `${model}下的${data['_id']}更新失败。库存数量不足。剩余数量: ${data[strField]}，所需数量: ${count}。`
-            }
-            data[strField] -= count
-            break
-        default:
-            break
-    }
-    data.save()
-    return data
-}
-
-exports.dbDeleteById = (req, res, model, arrFilter) => {
-    model.deleteMany({_id: {$in: arrFilter}}, (err, data) => {
-        if (err) {
-            return res.status(500).json({
-                err_code: 1,
-                message: `删除失败：${err.message}`
-            })
-        }
+// {$set: {isDeleted: true}}
+exports.dbUpdateManyById = async (req, res, model, objParameters, objUpdateData) => {
+    const session = await model.startSession()
+    await session.withTransaction(async () => {
+        await model.updateMany({_id: {$in: objParameters._id}}, objUpdateData, {session})
         return res.status(200).json({
             err_code: 0,
-            message: "删除成功",
-            // data
+            message: `操作成功`
         })
-    });
+    }).catch((err) => {
+        console.log(err.message)
+        return res.status(500).json({
+            err_code: 1,
+            message: `操作失败`
+        })
+    })
 }

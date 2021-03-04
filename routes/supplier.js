@@ -1,14 +1,8 @@
-const express = require('express');
-const {authenticateJWT} = require("../functions/validate");
-const {SaleModel} = require("../db/db_models");
-const {undefinedSupplierId} = require("../db/db_models");
-const {dbQueryOptions} = require("../functions/db_func");
-const router = express.Router();
-
-const {SupplierModel} = require('../db/db_models')
-const {validateRequiredQueryParameters} = require('../functions/validate')
-
-const {dbQueryList, dbAddUnique, dbUpdateUniqueById, dbDeleteById} = require('../functions/db_func')
+const express = require('express')
+const router = express.Router()
+const {SaleModel, undefinedSupplierId, SupplierModel} = require("../db/db_models")
+const {validateRequiredQueryParameters, authenticateJWT} = require('../functions/validate')
+const {dbQueryList, dbAddUnique, dbUpdateUniqueById, dbQueryOptions} = require('../functions/db_func')
 
 /**
  * err_code:
@@ -180,4 +174,4 @@ router.get('/delete', authenticateJWT, async (req, res) => {
     })
 })
 
-module.exports = router;
+module.exports = router

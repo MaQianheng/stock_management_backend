@@ -1,14 +1,12 @@
 const express = require('express');
-const multer = require("multer");
+const router = express.Router();
 const fs = require('fs');
+
+const multer = require("multer");
 const {funcGetUpdateCount} = require("../functions/utils");
 const {authenticateJWT, validateRequiredQueryParameters} = require("../functions/validate");
-const {undefinedProductId} = require("../db/db_models");
 const {handleImages} = require("../functions/imageHandler");
-const router = express.Router();
-
-const {ProductModel, ProductSubModel, ColorModel, ShelfModel} = require('../db/db_models')
-
+const {ProductModel, ProductSubModel, ColorModel, ShelfModel, undefinedProductId} = require('../db/db_models')
 const {dbQueryListSync, dbAddUnique} = require('../functions/db_func')
 
 /**

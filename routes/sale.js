@@ -1,19 +1,11 @@
 const express = require('express');
-const {OrderModel} = require("../db/db_models");
+const jst = require('jsonwebtoken')
 const router = express.Router();
 const mongoose = require('mongoose')
-const {undefinedSaleId} = require("../db/db_models");
-const {authenticateJWT} = require("../functions/validate");
-const {undefinedProductId} = require("../db/db_models");
 const {dbQueryListSync} = require("../functions/db_func");
-const {ProductModel} = require("../db/db_models");
 const {funcCurrentPage} = require("../functions/utils");
-const jst = require('jsonwebtoken')
-const {undefinedDriverId} = require("../db/db_models");
-const {ShelfModel} = require("../db/db_models");
-const {ProductSubModel, SaleModel} = require('../db/db_models')
-
-const {validateRequiredQueryParameters} = require('../functions/validate')
+const {ProductSubModel, OrderModel, undefinedSaleId, undefinedProductId, ProductModel, undefinedDriverId, ShelfModel, SaleModel} = require('../db/db_models')
+const {validateRequiredQueryParameters, authenticateJWT} = require('../functions/validate')
 
 /**
  * err_code:
@@ -21,7 +13,7 @@ const {validateRequiredQueryParameters} = require('../functions/validate')
  *  1: server error
  *  2: user error
  */
-
+// action -> 0: all, 1: in, 2: out, 3: exchange
 router.get('/query_history', authenticateJWT, async (req, res) => {
     let objFilter = {}
     try {
@@ -41,17 +33,27 @@ router.get('/query_history', authenticateJWT, async (req, res) => {
                 isRequired: false,
                 str: '操作类型'
             },
+            customerRef: {
+                type: 'String',
+                isRequired: false,
+                str: '客户id'
+            },
+            supplierRef: {
+                type: 'String',
+                isRequired: false,
+                str: '供应商id'
+            },
             operatorRef: {
                 type: 'String',
                 isRequired: false,
                 str: '操作人id'
             },
-            productCode: {
+            code: {
                 type: 'String',
                 isRequired: false,
                 str: '货号'
             },
-            productName: {
+            name: {
                 type: 'String',
                 isRequired: false,
                 str: '名称'
@@ -93,30 +95,27 @@ router.get('/query_history', authenticateJWT, async (req, res) => {
                 delete objFilter.timeStamp
                 break
             case 'action':
-                if (objFilter.action === 0 || objFilter.action === 1) {
-                    objFilter["sale.action"] = objFilter.action
-                }
+                if (objFilter.action === 1 || objFilter.action === 2 || objFilter.action === 3) objFilter["sale.action"] = objFilter.action
                 delete objFilter.action
                 break
-            case 'operatorRef':
-                objFilter["sale.operatorRef"] = mongoose.Types.ObjectId(objFilter.operatorRef)
-                delete objFilter.operatorRef
+            case 'code':
+                objFilter["product.code"] = objFilter.code
+                delete objFilter.code
                 break
-            case 'productCode':
-                objFilter["product.code"] = objFilter.productCode
-                delete objFilter.productCode
-                break
-            case 'productName':
-                objFilter["product.name"] = objFilter.productName
-                delete objFilter.productName
+            case 'name':
+                objFilter["product.name"] = objFilter.name
+                delete objFilter.name
                 break
             case 'colorRef':
                 objFilter["product.colorRef"] = mongoose.Types.ObjectId(objFilter.colorRef)
                 delete objFilter.colorRef
                 break
             case 'driverRef':
-                objFilter["sale.driverRef"] = mongoose.Types.ObjectId(objFilter.driverRef)
-                delete objFilter.driverRef
+            case 'customerRef':
+            case 'supplierRef':
+            case 'operatorRef':
+                objFilter[`sale.${filterKey}`] = mongoose.Types.ObjectId(objFilter[filterKey])
+                delete objFilter[filterKey]
                 break
             case 'shelfRef': {
                 const tmp = []
@@ -129,7 +128,6 @@ router.get('/query_history', authenticateJWT, async (req, res) => {
             }
         }
     }
-    console.log(objFilter)
     let saleOrderDoc = await OrderModel.aggregate([
         {
             $lookup: {
@@ -229,10 +227,10 @@ router.get('/query_history', authenticateJWT, async (req, res) => {
                 product: {}
             }
             switch (action) {
-                case 0:
+                case 1:
                     objTmp.supplierName = saleRef.supplierRef.supplierName
                     break
-                case 1:
+                case 2:
                     objTmp.driverRef = saleRef.driverRef
                     objTmp.deliveryFee = saleRef.deliveryFee
                     objTmp.customerName = saleRef.customerRef.name
@@ -257,13 +255,24 @@ router.get('/query_history', authenticateJWT, async (req, res) => {
         }
         objData[_id].totalWeight += operateWeight
         objData[_id].totalPrice += price
+        let afterOperateWeight
+        switch (orderDoc.saleRef.action) {
+            case 1:
+            case 3:
+                afterOperateWeight = oriWeight + operateWeight
+                break
+            case 2:
+            case 4:
+                afterOperateWeight = oriWeight - operateWeight
+                break
+        }
         objData[_id].product[productRef._id].order.push(
             {
                 orderRef,
                 shelfRef,
                 oriWeight,
                 operateWeight,
-                afterOperateWeight: orderDoc.saleRef.action === 0 ? oriWeight + operateWeight : oriWeight - operateWeight,
+                afterOperateWeight,
                 remainingWeight,
                 price,
             }
@@ -319,7 +328,7 @@ router.get('/query_product', authenticateJWT, async (req, res) => {
     const {action} = objProductFilter
     objProductFilter._id = {$ne: undefinedProductId}
     delete objProductFilter.action
-    if (action !== 0 && action !== 1) return res.status(500).json({err_code: 2, message: '操作类型不匹配'})
+    if (action !== 1 && action !== 2 && action !== 3) return res.status(500).json({err_code: 2, message: '操作类型不匹配'})
 
     let dataCount, arrProduct
     try {
@@ -376,49 +385,6 @@ router.get('/query_product', authenticateJWT, async (req, res) => {
         dataCount,
         data: arrResult
     })
-
-    // {
-    //     productId1: {
-    //         name: '',
-    //         code: '',
-    //         imageURLs: [],
-    //         price: 99,
-    //         colorRef: {},
-    //         warehouseId1: {
-    //             shelfId1: {
-    //                 oriWeight: 999,
-    //                 operateWeight: 0,
-    //                 afterOperateWeight: 999
-    //             },
-    //             shelfId2: {
-    //                 oriWeight: 999,
-    //                 operateWeight: 0,
-    //                 afterOperateWeight: 999
-    //             }
-    //         }
-    //     }
-    // }
-
-    // [
-    //     {
-    //         code: '',
-    //         name: '',
-    //         color: '',
-    //         price: '',
-    //         sub: {
-    //             601b62a5234f3057edbc105e: {
-    //                 operateWeight: 0,
-    //                 oriWeight: 999,
-    //                 afterOperate: 999
-    //             },
-    //             601b62b3234f3057edbc1061: {
-    //                 operateWeight: 0,
-    //                 oriWeight: 999,
-    //                 afterOperate: 999
-    //             }
-    //         }
-    //     }
-    // ]
 })
 
 router.get('/add', authenticateJWT, async (req, res) => {
@@ -430,11 +396,6 @@ router.get('/add', authenticateJWT, async (req, res) => {
                 isRequired: true,
                 str: '操作类型'
             },
-            // operatorRef: {
-            //     type: 'String',
-            //     isRequired: true,
-            //     str: '操作员id'
-            // },
             supplierRef: {
                 type: 'String',
                 isRequired: false,

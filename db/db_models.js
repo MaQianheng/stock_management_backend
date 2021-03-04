@@ -198,19 +198,22 @@ const UserModel = mongoose.model('user', mongoose.Schema({
     username: {type: String, required: true},
     password: {type: String, required: true},
     name: {type: String, required: true},
-    level: {type: Number, required: true}
+    level: {type: Number, required: true},
+    isDeleted: {type: Boolean, required: false, default: false}
 }))
 
 const ColorModel = mongoose.model('color', mongoose.Schema({
     color: {type: String, required: true},
-    relatedProductCount: {type: Number, required: true, default: 0}
+    relatedProductCount: {type: Number, required: true, default: 0},
+    isDeleted: {type: Boolean, required: false, default: false}
 }))
 
 const DriverModel = mongoose.model('driver', mongoose.Schema({
     name: {type: String, required: true},
     phone: {type: String, required: false, default: '无'},
     plate: {type: String, required: false, default: '无'},
-    toBePaid: {type: Number, required: true, default: 0}
+    toBePaid: {type: Number, required: true, default: 0},
+    isDeleted: {type: Boolean, required: false, default: false}
 }))
 
 const DriverAccountingModel = mongoose.model('driverAccount', mongoose.Schema({
@@ -223,7 +226,8 @@ const DriverAccountingModel = mongoose.model('driverAccount', mongoose.Schema({
 
 const CustomerModel = mongoose.model('customer', mongoose.Schema({
     name: {type: String, required: true},
-    remark: {type: String, required: false, default: '无备注'}
+    remark: {type: String, required: false, default: '无备注'},
+    isDeleted: {type: Boolean, required: false, default: false}
 }))
 
 const DashboardModel = mongoose.model('dashboard', mongoose.Schema({}))
@@ -236,7 +240,8 @@ const SaleModel = mongoose.model('sale', mongoose.Schema({
     customerRef: {type: mongoose.Schema.ObjectId, ref: 'customer', required: false},
     supplierRef: {type: mongoose.Schema.ObjectId, ref: 'supplier', required: false},
     driverRef: {type: mongoose.Schema.ObjectId, ref: 'driver', required: false},
-    deliveryFee: {type: Number, required: false}
+    deliveryFee: {type: Number, required: false},
+    isDeleted: {type: Boolean, required: false, default: false}
 }))
 
 const OrderModel = mongoose.model('order', mongoose.Schema({
@@ -249,13 +254,15 @@ const OrderModel = mongoose.model('order', mongoose.Schema({
 
 const WarehouseModel = mongoose.model('warehouse', mongoose.Schema({
     warehouse: {type: String, required: true},
-    relatedShelfCount: {type: Number, required: true, default: 0}
+    relatedShelfCount: {type: Number, required: true, default: 0},
+    isDeleted: {type: Boolean, required: false, default: false}
 }))
 
 const ShelfModel = mongoose.model('shelf', mongoose.Schema({
     warehouseRef: {type: mongoose.Schema.ObjectId, ref: 'warehouse', required: true},
     shelf: {type: String, required: true},
-    relatedProductCount: {type: Number, required: true, default: 0}
+    relatedProductCount: {type: Number, required: true, default: 0},
+    isDeleted: {type: Boolean, required: false, default: false}
 }))
 
 const ProductModel = mongoose.model('product', mongoose.Schema({
@@ -264,21 +271,24 @@ const ProductModel = mongoose.model('product', mongoose.Schema({
     colorRef: {type: mongoose.Schema.ObjectId, ref: 'color', required: true},
     price: {type: Number, required: false, default: 0},
     imageURLs: {type: Array, required: false},
-    remark: {type: String, required: false, default: '无备注'}
+    remark: {type: String, required: false, default: '无备注'},
+    isDeleted: {type: Boolean, required: false, default: false}
 }))
 
 const ProductSubModel = mongoose.model('productSub', mongoose.Schema({
     productRef: {type: mongoose.Schema.ObjectId, ref: 'product', required: true},
     shelfRef: {type: mongoose.Schema.ObjectId, ref: 'shelf', required: true},
     remainingWeight: {type: Number, required: true, default: 0},
-    soldWeight: {type: Number, required: false, default: 0}
+    soldWeight: {type: Number, required: false, default: 0},
+    isDeleted: {type: Boolean, required: false, default: false}
 }))
 
 const SupplierModel = mongoose.model('supplier', mongoose.Schema({
     supplierName: {type: String, required: true},
     name: {type: String, required: true},
     phone: {type: String, required: false},
-    remark: {type: String, required: false, default: '无备注'}
+    remark: {type: String, required: false, default: '无备注'},
+    isDeleted: {type: Boolean, required: false, default: false}
 }))
 
 const TestModel = mongoose.model('test', mongoose.Schema({

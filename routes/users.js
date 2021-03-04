@@ -1,13 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const jst = require('jsonwebtoken');
-const {authenticateJWT} = require("../functions/validate");
 // filter:过滤数据
 const filter = {password: 0, __v: 0};
 
 const {dbUpdateUniqueById, dbQueryOptions, dbAddUnique} = require("../functions/db_func");
 const {funcCurrentPage} = require("../functions/utils");
-const {filterObjValue, validateRequiredQueryParameters} = require("../functions/validate");
+const {filterObjValue, validateRequiredQueryParameters, authenticateJWT} = require("../functions/validate");
 const {undefinedUserId, UserModel} = require("../db/db_models");
 
 

@@ -1,14 +1,8 @@
-const express = require('express');
-const router = express.Router();
-const mongoose = require('mongoose')
-const {authenticateJWT} = require("../functions/validate");
-const {ProductModel} = require("../db/db_models");
-const {undefinedColorId} = require("../db/db_models");
-
-const {ColorModel} = require('../db/db_models')
-const {validateRequiredQueryParameters} = require('../functions/validate')
-
-const {dbQueryList, dbAddUnique, dbUpdateUniqueById, dbQueryOptions} = require('../functions/db_func')
+const express = require('express')
+const router = express.Router()
+const {ColorModel} = require("../db/db_models")
+const {validateRequiredQueryParameters, authenticateJWT} = require('../functions/validate')
+const {dbQueryList, dbAddUnique, dbUpdateUniqueById, dbQueryOptions, dbUpdateManyById} = require('../functions/db_func')
 
 /**
  * err_code:
@@ -107,28 +101,67 @@ router.get('/delete', authenticateJWT, async (req, res) => {
             message: `${err}`
         })
     }
-    if (objParameters._id.indexOf(String(undefinedColorId)) !== -1) {
-        return res.status(500).json({
-            err_code: 2,
-            message: '该数据不可被操作'
-        })
-    }
-    const session = await ColorModel.startSession()
-    await session.withTransaction(async () => {
-        // update productSub color to undefined
-        await ProductModel.updateMany({colorRef: {$in: objParameters._id}}, {$set: {colorRef: undefinedColorId}}, {session})
-        // delete
-        const deleteRes = await ColorModel.deleteMany({_id: {$in: objParameters._id}}, {session})
-        return res.status(200).json({
-            err_code: 0,
-            message: `成功删除${deleteRes.deletedCount}条数据。`
-        })
-    }).catch((err) => {
-        return res.status(500).json({
-            err_code: 1,
-            message: `删除失败：${err.message}`
-        })
-    })
+    // const session = await ColorModel.startSession()
+    // await session.withTransaction(async () => {
+    //     // update productSub color to undefined
+    //     // await ProductModel.updateMany({colorRef: {$in: objParameters._id}}, {$set: {colorRef: undefinedColorId}}, {session})
+    //     // delete
+    //     const deleteRes = await ColorModel.updateMany({_id: {$in: objParameters._id}}, {$set: {isDeleted: true}}, {session})
+    //     return res.status(200).json({
+    //         err_code: 0,
+    //         message: `成功删除${deleteRes.deletedCount}条数据。`
+    //     })
+    // }).catch((err) => {
+    //     return res.status(500).json({
+    //         err_code: 1,
+    //         message: `删除失败：${err.message}`
+    //     })
+    // })
+    await dbUpdateManyById(req, res, ColorModel, objParameters, {$set: {isDeleted: true}})
 })
 
-module.exports = router;
+router.get('/restore', authenticateJWT, async (req, res) => {
+    let objParameters = {}
+    try {
+        objParameters = validateRequiredQueryParameters(req, res, {
+            _id: {
+                type: 'StringArray',
+                isRequired: true,
+                str: '颜色id'
+            }
+        })
+    } catch (err) {
+        return res.status(500).json({
+            err_code: 1,
+            message: `${err}`
+        })
+    }
+    await dbUpdateManyById(req, res, ColorModel, objParameters, {$set: {isDeleted: false}})
+})
+
+router.get('/update_delete_marker', authenticateJWT, async (req, res) => {
+    let objParameters = {}
+    try {
+        objParameters = validateRequiredQueryParameters(req, res, {
+            _id: {
+                type: 'StringArray',
+                isRequired: true,
+                str: '颜色id'
+            },
+            // 0: false, 1: true
+            action: {
+                type: 'Number',
+                isRequired: true,
+                str: '操作'
+            }
+        })
+    } catch (err) {
+        return res.status(500).json({
+            err_code: 1,
+            message: `${err}`
+        })
+    }
+    await dbUpdateManyById(req, res, ColorModel, objParameters, {$set: {isDeleted: objParameters.action !== 1}})
+})
+
+module.exports = router

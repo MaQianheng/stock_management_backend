@@ -1,13 +1,8 @@
-const express = require('express');
-const router = express.Router();
-const mongoose = require('mongoose')
-const {authenticateJWT} = require("../functions/validate");
-const {ShelfModel} = require("../db/db_models");
-const {undefinedWarehouseId} = require("../db/db_models");
-
-const {WarehouseModel} = require('../db/db_models')
-const {validateRequiredQueryParameters} = require('../functions/validate')
-
+const express = require('express')
+const {dbUpdateManyById} = require("../functions/db_func");
+const router = express.Router()
+const {ShelfModel, undefinedWarehouseId, WarehouseModel} = require("../db/db_models")
+const {authenticateJWT, validateRequiredQueryParameters} = require('../functions/validate')
 const {dbQueryList, dbAddUnique, dbQueryOptions, dbUpdateUniqueById} = require('../functions/db_func')
 
 /**
@@ -129,4 +124,30 @@ router.get('/delete', authenticateJWT, async (req, res) => {
 
 })
 
-module.exports = router;
+
+router.get('/update_delete_marker', authenticateJWT, async (req, res) => {
+    let objParameters = {}
+    try {
+        objParameters = validateRequiredQueryParameters(req, res, {
+            _id: {
+                type: 'StringArray',
+                isRequired: true,
+                str: '库房id'
+            },
+            // 0: false, 1: true
+            action: {
+                type: 'Number',
+                isRequired: true,
+                str: '操作'
+            }
+        })
+    } catch (err) {
+        return res.status(500).json({
+            err_code: 1,
+            message: `${err}`
+        })
+    }
+    await dbUpdateManyById(req, res, WarehouseModel, objParameters, {$set: {isDeleted: objParameters.action !== 1}})
+})
+
+module.exports = router

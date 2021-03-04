@@ -1,16 +1,9 @@
 const express = require('express');
-const {authenticateJWT} = require("../functions/validate");
-const {ProductSubModel} = require("../db/db_models");
-const {dbQueryListCountSync} = require("../functions/db_func");
-const {dbQueryListSync} = require("../functions/db_func");
-const {dbQueryOptions} = require("../functions/db_func");
+const {dbUpdateManyById} = require("../functions/db_func");
 const router = express.Router();
-const {undefinedShelfId} = require("../db/db_models");
-
-const {WarehouseModel, ShelfModel} = require('../db/db_models')
-const {validateRequiredQueryParameters} = require('../functions/validate')
-
-const {dbUpdateUniqueById} = require('../functions/db_func')
+const {authenticateJWT, validateRequiredQueryParameters} = require("../functions/validate");
+const {dbQueryListCountSync, dbQueryListSync, dbQueryOptions, dbUpdateUniqueById} = require("../functions/db_func");
+const {WarehouseModel, ProductSubModel, undefinedShelfId, ShelfModel} = require('../db/db_models')
 
 /**
  * err_code:
@@ -43,7 +36,8 @@ router.get('/query', authenticateJWT, async (req, res) => {
                 select: {
                     _id: 1,
                     warehouse: 1,
-                    relatedShelfCount: 1
+                    relatedShelfCount: 1,
+                    isDeleted: 1
                 }
             }
         ])
@@ -51,14 +45,17 @@ router.get('/query', authenticateJWT, async (req, res) => {
         let objWarehouseIdIndex = {}
         for (let i = 0; i < arrData.length; i++) {
             const objOri = arrData[i]
-            const warehouseRef = objOri.warehouseRef === null ? `undefined_${i}` : objOri.warehouseRef._id
+            // const {warehouseRef} = objOri.warehouseRef === null ? `undefined_${i}` : objOri.warehouseRef._id
+            const {warehouseRef} = objOri
+            const {_id, warehouse, relatedShelfCount, isDeleted} = warehouseRef
             if (!(warehouseRef in objWarehouseIdIndex)) {
                 objWarehouseIdIndex[warehouseRef] = arrResult.length
                 arrResult.push({
-                    warehouseRef,
+                    warehouseRef: _id,
                     status: 0,
-                    warehouseName: objOri.warehouseRef ? objOri.warehouseRef.warehouse : '未定义',
-                    relatedShelfCount: objOri.warehouseRef ? objOri.warehouseRef.relatedShelfCount : '未定义',
+                    warehouse,
+                    relatedShelfCount,
+                    isDeleted,
                     sub: []
                 })
             }
@@ -66,7 +63,8 @@ router.get('/query', authenticateJWT, async (req, res) => {
             let objShelfSub = {
                 _id: objOri._id,
                 status: 0,
-                shelfName: objOri.shelf,
+                shelf: objOri.shelf,
+                isDeleted: objOri.isDeleted,
                 relatedProductCount: objOri.relatedProductCount
             }
             arrResult[arrResultIndex].sub.push(objShelfSub)
@@ -137,13 +135,6 @@ router.get('/query_cascading_warehouse_shelf', authenticateJWT, (req, res) => {
         }
     ])
 })
-
-// router.get('/query_shelf_warehouse_KV', (req authenticateJWT,, res) => {
-//     ShelfModel.find({}, {}, {}, (err, data) => {}).populate([{
-//         path: 'warehouseRef',
-//         model: 'warehouse',
-//     }])
-// })
 
 router.get('/add', authenticateJWT, async (req, res) => {
     let objParameters = {}
@@ -289,6 +280,32 @@ router.get('/delete', authenticateJWT, async (req, res) => {
             message: `删除失败：${err.message}`
         })
     })
+})
+
+router.get('/update_delete_marker', authenticateJWT, async (req, res) => {
+    let objParameters = {}
+    try {
+        objParameters = validateRequiredQueryParameters(req, res, {
+            _id: {
+                type: 'StringArray',
+                isRequired: true,
+                str: '货架id'
+            },
+            // 0: false, 1: true
+            action: {
+                type: 'Number',
+                isRequired: true,
+                str: '操作'
+            }
+        })
+    } catch (err) {
+        return res.status(500).json({
+            err_code: 1,
+            message: `${err}`
+        })
+    }
+    // 1: restore, 2: soft delete
+    await dbUpdateManyById(req, res, ShelfModel, objParameters, {$set: {isDeleted: objParameters.action !== 1}})
 })
 
 module.exports = router;

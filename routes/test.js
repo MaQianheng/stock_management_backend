@@ -1,16 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose')
-const {authenticateJWT} = require("../functions/validate");
-const {OrderModel} = require("../db/db_models");
-const {ColorModel} = require("../db/db_models");
-const {ProductModel} = require("../db/db_models");
-const {DriverModel} = require("../db/db_models");
-const {SupplierModel} = require("../db/db_models");
-const {CustomerModel} = require("../db/db_models");
+const {SaleModel} = require("../db/db_models");
+const {ShelfModel} = require("../db/db_models");
+const {WarehouseModel} = require("../db/db_models");
+const {ProductSubModel} = require("../db/db_models");
+const {authenticateJWT, validateRequiredQueryParameters} = require("../functions/validate");
+const {OrderModel, ColorModel, ProductModel, DriverModel, SupplierModel, CustomerModel, TestModel} = require("../db/db_models");
 
-const {validateRequiredQueryParameters} = require("../functions/validate");
-const {TestModel} = require('../db/db_models')
+// router.get('/special_update', async (req, res) => {
+//     await ProductModel.updateMany({}, {$set: {isDeleted: false}})
+//     await ProductSubModel.updateMany({}, {$set: {isDeleted: false}})
+//     await WarehouseModel.updateMany({}, {$set: {isDeleted: false}})
+//     await ShelfModel.updateMany({}, {$set: {isDeleted: false}})
+//     await DriverModel.updateMany({}, {$set: {isDeleted: false}})
+//     await CustomerModel.updateMany({}, {$set: {isDeleted: false}})
+//     await SaleModel.updateMany({}, {$set: {isDeleted: false}})
+//     await ProductSubModel.updateMany({}, {$set: {isDeleted: false}})
+//     await SupplierModel.updateMany({}, {$set: {isDeleted: false}})
+//     return res.status(200).json({message: "ok"})
+// })
 
 router.get('/test', authenticateJWT, async (req, res) => {
     // 找不到并不会添加
@@ -361,11 +370,6 @@ function generateRandomProductCode() {
 function generateRandomColorRef() {
     const arrColorId = ["6018bc26884f1e2ec5b54490", "6018bc29884f1e2ec5b54491", "6018bc2b884f1e2ec5b54492", "6018bc2d884f1e2ec5b54493", "6018bc31884f1e2ec5b54494", "601a8e9aa76e1952c1a1786f", "601a8e9fa76e1952c1a17870", "601a8ea4a76e1952c1a17871", "601a8eb0a76e1952c1a17872", "601a8eb3a76e1952c1a17873", "601a8ebca76e1952c1a17874", "601a8ec5a76e1952c1a17875", "601a8ecaa76e1952c1a17876", "601a8ecda76e1952c1a17877", "601a8ed0a76e1952c1a17878", "601a8edca76e1952c1a17879", "601a8ee7a76e1952c1a1787a", "601a8eeaa76e1952c1a1787b", "601a8eeea76e1952c1a1787c"]
     return arrColorId[generateRandomIntegerNumber(0, arrColorId.length - 1)]
-}
-
-function generateRandomShelfRef() {
-    const arrShelfId = ["6018af3d87d02d2e67f30ab1", "6018b11e8c131e2e923dd250", "6018b1418c131e2e923dd251", "6018b1478c131e2e923dd252", "601a8f54a76e1952c1a1787f", "601a8f57a76e1952c1a17880", "601a8f5aa76e1952c1a17881", "601a8f5fa76e1952c1a17882", "601a8f64a76e1952c1a17883", "601a8f67a76e1952c1a17884", "601a8f6ba76e1952c1a17885"]
-    return arrShelfId[generateRandomIntegerNumber(0, arrShelfId.length - 1)]
 }
 
 function generateRandomCompanyName() {

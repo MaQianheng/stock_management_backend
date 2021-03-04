@@ -1,11 +1,6 @@
 const express = require('express');
-const {undefinedShelfId} = require("../db/db_models");
-const {ShelfModel} = require("../db/db_models");
-const {undefinedProductId} = require("../db/db_models");
-const {ProductSubModel} = require("../db/db_models");
+const {ShelfModel, undefinedProductId, ProductSubModel, undefinedSaleId, OrderModel} = require("../db/db_models");
 const {funcObjSortBySpecificKey} = require("../functions/utils");
-const {undefinedSaleId} = require("../db/db_models");
-const {OrderModel} = require("../db/db_models");
 const {authenticateJWT} = require("../functions/validate");
 const router = express.Router();
 
@@ -124,7 +119,7 @@ router.get('/query', authenticateJWT, async (req, res) => {
             if (!(_id in tmpObjProductInOutWeight)) {
                 tmpObjProductInOutWeight[_id] = {code, name, in: 0, out: 0}
             }
-            if (action === 0) {
+            if (action === 1) {
                 arrMonthlyInTotalWeight[index] += operateWeight
                 tmpObjProductInOutWeight[_id].in += operateWeight
             } else {
