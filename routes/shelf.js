@@ -167,7 +167,7 @@ router.get('/add', authenticateJWT, async (req, res) => {
         if (shelfDoc) throw {message: `${objParameters.shelf}在该库房下已存在`}
         const warehouseDoc = await WarehouseModel.findOneAndUpdate({_id: objParameters.warehouseRef}, {$inc: {relatedShelfCount: +1}}, {session})
         if (!warehouseDoc) throw {message: `该库房不存在`}
-        const addRes = await ShelfModel({warehouseRef: objParameters.warehouseRef, shelf: objParameters.shelf}).save()
+        await ShelfModel({warehouseRef: objParameters.warehouseRef, shelf: objParameters.shelf}).save()
         return res.status(200).json({
             err_code: 0,
             message: '添加成功'
@@ -184,17 +184,12 @@ router.get('/update', authenticateJWT, (req, res) => {
     let objParameters = {}
     try {
         objParameters = validateRequiredQueryParameters(req, res, {
-            warehouseRef: {
-                type: 'String',
-                isRequired: true,
-                str: '库房id'
-            },
             _id: {
                 type: 'String',
                 isRequired: true,
                 str: '货架id'
             },
-            shelfName: {
+            shelf: {
                 type: 'String',
                 isRequired: true,
                 str: '货架'
@@ -206,16 +201,21 @@ router.get('/update', authenticateJWT, (req, res) => {
             message: `${err}`
         })
     }
-    // if (objParameters._id.indexOf(undefinedShelfId) !== -1) {
-    //     return res.status(500).json({
-    //         err_code: 2,
-    //         message: '该数据不可被操作'
-    //     })
-    // }
-    dbUpdateUniqueById(req, res, ShelfModel, objParameters._id, {
-        warehouseRef: objParameters.warehouseRef,
-        shelf: objParameters.shelfName
-    }, {shelf: objParameters.shelfName})
+    ShelfModel.findOne({_id: objParameters._id}, {warehouseRef: 1}, {}, (err, data) => {
+        if (err) {
+            console.log(err)
+            return res.status(500).json({
+                err_code: 1,
+                message: '操作失败'
+            })
+        }
+        // console.log(data)
+        // {"err_code":2,"message":"warehouseRef: 601b6293234f3057edbc105a,isDeleted: false已存在"}
+        dbUpdateUniqueById(req, res, ShelfModel, objParameters._id, {
+            warehouseRef: data.warehouseRef,
+            shelf: objParameters.shelf
+        }, {shelf: objParameters.shelf})
+    })
 })
 
 router.get('/delete', authenticateJWT, async (req, res) => {
