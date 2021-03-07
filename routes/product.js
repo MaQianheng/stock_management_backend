@@ -80,12 +80,13 @@ router.get('/query', authenticateJWT, async (req, res) => {
     }
 
     try {
-        arrProduct = await dbQueryListSync(req, res, ProductModel, 5, objProductFilter, "_id code name price colorRef imageURLs remark", [
+        arrProduct = await dbQueryListSync(req, res, ProductModel, 5, objProductFilter, "_id code name price colorRef imageURLs remark isDeleted", [
             {
                 path: 'colorRef', model: 'color',
                 select: {
                     _id: 1,
-                    color: 1
+                    color: 1,
+                    isDeleted: 1
                 }
             }
         ])
@@ -111,8 +112,9 @@ router.get('/query', authenticateJWT, async (req, res) => {
         ]
         arrProduct[i]['_doc'].status = 0
         arrProduct[i]['_doc']['colorRef'] = {
-            value: arrProduct[i]['_doc']['colorRef']._id,
-            text: arrProduct[i]['_doc']['colorRef']['color']
+            value: arrProduct[i]['_doc']['colorRef']['_id'],
+            text: arrProduct[i]['_doc']['colorRef']['color'],
+            isDeleted: arrProduct[i]['_doc']['colorRef']['isDeleted']
         }
         // delete arrProduct[i]['_doc']['colorRef']
         objProductSubFilter.productRef.push(arrProduct[i]._id)

@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const jst = require('jsonwebtoken');
+const {dbUpdateManyById} = require("../functions/db_func");
 // filter:过滤数据
 const filter = {password: 0, __v: 0};
 
 const {dbUpdateUniqueById, dbQueryOptions, dbAddUnique} = require("../functions/db_func");
 const {funcCurrentPage} = require("../functions/utils");
 const {filterObjValue, validateRequiredQueryParameters, authenticateJWT} = require("../functions/validate");
-const {undefinedUserId, UserModel} = require("../db/db_models");
+const {undefinedUserId, OperatorModel} = require("../db/db_models");
 
 
 /**
@@ -42,14 +43,14 @@ router.get('/query', authenticateJWT, async (req, res) => {
     objFilter._id = {$ne: undefinedUserId}
     objFilter = filterObjValue(objFilter)
     let intCurrentPageCount = funcCurrentPage(req)
-    UserModel.countDocuments(objFilter, function (err, dataCount) {
+    OperatorModel.countDocuments(objFilter, function (err, dataCount) {
         if (err) {
             return res.status(500).json({
                 err_code: 1,
                 message: `读取数据失败：${err.message}`
             })
         }
-        UserModel.find(objFilter, {__v: 0}, (err, data) => {
+        OperatorModel.find(objFilter, {__v: 0}, (err, data) => {
             if (err) {
                 return res.status(500).json({
                     err_code: 1,
@@ -83,7 +84,7 @@ router.get('/query', authenticateJWT, async (req, res) => {
             })
         }).skip(((intCurrentPageCount === 0 ? 1 : intCurrentPageCount) - 1) * 10).limit(intCurrentPageCount === 0 ? 0 : 10);
     });
-    // dbQueryList(req, res, UserModel, 10, objFilter)
+    // dbQueryList(req, res, OperatorModel, 10, objFilter)
     // const {userId} = req.body
     // let validationRes = await validate(userId)
     // switch (validationRes.err_code) {
@@ -117,7 +118,7 @@ router.get('/fuzzy_query_operator_name', authenticateJWT, (req, res) => {
             message: `${err}`
         })
     }
-    UserModel.find({name: {$regex: eval(`/${objParameters.name}/`)}}, '_id name', {}, (err, data) => {
+    OperatorModel.find({name: {$regex: eval(`/${objParameters.name}/`)}}, '_id name', {}, (err, data) => {
         if (err) {
             console.log(err)
             return res.status(500).json({
@@ -133,8 +134,8 @@ router.get('/fuzzy_query_operator_name', authenticateJWT, (req, res) => {
     // clubName: `/${clubName}/`
 })
 
-router.get('/query_user_options', authenticateJWT, (req, res) => {
-    dbQueryOptions(req, res, UserModel, {}, "name")
+router.get('/query_operator_options', authenticateJWT, (req, res) => {
+    dbQueryOptions(req, res, OperatorModel, {}, "name")
 })
 
 router.post('/add', authenticateJWT, async (req, res, next) => {
@@ -169,7 +170,7 @@ router.post('/add', authenticateJWT, async (req, res, next) => {
             message: `${err}`
         })
     }
-    await dbAddUnique(req, res, UserModel, {username: objFilter.username}, objFilter)
+    await dbAddUnique(req, res, OperatorModel, {username: objFilter.username}, objFilter)
 })
 
 router.post('/update', authenticateJWT, async (req, res, next) => {
@@ -216,7 +217,7 @@ router.post('/update', authenticateJWT, async (req, res, next) => {
     //     })
     // }
     objFilter.level = objFilter.level.value
-    dbUpdateUniqueById(req, res, UserModel, objFilter._id, {username: objFilter.username}, objFilter)
+    dbUpdateUniqueById(req, res, OperatorModel, objFilter._id, {username: objFilter.username}, objFilter)
 })
 
 router.post('/login', function (req, res, next) {
@@ -240,7 +241,7 @@ router.post('/login', function (req, res, next) {
             message: `${err}`
         })
     }
-    UserModel.findOne(objFilter, filter, (err, user) => {
+    OperatorModel.findOne(objFilter, filter, (err, user) => {
         if (err) {
             return res.status(500).json({
                 err_code: 1,
@@ -248,9 +249,15 @@ router.post('/login', function (req, res, next) {
             })
         }
         if (!user || user._id === undefinedUserId) {
-            return res.status(500).json({
+            return res.status(412).json({
                 err_code: 2,
                 message: '用户名或密码错误'
+            })
+        }
+        if (user.isDeleted === true) {
+            return res.status(403).json({
+                err_code: 2,
+                message: '该账户已被删除'
             })
         }
         const token = jst.sign({_id: user._id,username: objFilter.username}, 'qianhengma')
@@ -271,6 +278,31 @@ router.post('/login', function (req, res, next) {
             message: '登陆成功'
         })
     })
+})
+
+router.get('/update_delete_marker', authenticateJWT, async (req, res) => {
+    let objParameters = {}
+    try {
+        objParameters = validateRequiredQueryParameters(req, res, {
+            _id: {
+                type: 'StringArray',
+                isRequired: true,
+                str: '管理员id'
+            },
+            // 0: false, 1: true
+            action: {
+                type: 'Number',
+                isRequired: true,
+                str: '操作'
+            }
+        })
+    } catch (err) {
+        return res.status(500).json({
+            err_code: 1,
+            message: `${err}`
+        })
+    }
+    await dbUpdateManyById(req, res, OperatorModel, objParameters, {$set: {isDeleted: objParameters.action !== 1}})
 })
 
 module.exports = router;

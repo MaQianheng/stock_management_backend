@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 const {funcConvertFormat} = require("./utils");
-const {UserModel} = require('../db/db_models')
+const {OperatorModel} = require('../db/db_models')
 // const jwt = require('express-jwt')
 const jwt = require('jsonwebtoken')
 let filter = {password: 0, __v: 0}
@@ -18,20 +18,15 @@ exports.authenticateJWT = (req, res, next) => {
     const token = req.headers.authorization;
     if (token) {
         jwt.verify(token, 'qianhengma', (err, tokenResult) => {
-            if (err) {
-                return res.status(403).json({message: '无效的token'});
-            }
-            UserModel.findOne({_id: tokenResult._id}, {}, {}, (err, user) => {
-                if (err) {
-                    return res.status(403).json({message: '用户查找失败'});
-                }
-                if (!user) {
-                    return res.status(401).json({message: '无效的用户'})
-                }
+            if (err) return res.status(403).json({message: '无效的令牌'})
+            OperatorModel.findOne({_id: tokenResult._id}, {}, {}, (err, user) => {
+                if (err) return res.status(500).json({message: '服务器内部错误，请重试'})
+                if (!user) return res.status(412).json({message: '用户不存在'})
+                if (user.isDeleted) return res.status(403).json({err_code: 2, message: '该账户已被删除'})
                 req.userLevel = user.level;
-                next();
+                next()
             })
-        });
+        })
     } else {
         return res.status(401).json({message: '请验证身份'});
     }
@@ -40,7 +35,7 @@ exports.authenticateJWT = (req, res, next) => {
 exports.validate = async (userId) => {
     let user
     try {
-        user = await UserModel.findById(userId, '_id username').exec();
+        user = await OperatorModel.findById(userId, '_id username').exec();
     } catch (e) {
         return {err_code: 1, message: e.message}
     }

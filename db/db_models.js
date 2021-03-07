@@ -21,20 +21,20 @@ const undefinedUserId = mongoose.Types.ObjectId('6017567ac814381929e89fab')
 const undefinedSaleId = mongoose.Types.ObjectId('601b710943394661fdb6996c')
 const undefinedOrderId = mongoose.Types.ObjectId('601b710e43394661fdb6996d')
 
+const defaultOperatorId = mongoose.Types.ObjectId('6019fb8c2e2bb3dba3c87354')
+
 const mongoDB = mongoose.connection;
 mongoDB.on('error', console.error.bind(console, 'connection error:'));
 mongoDB.once('open', function () {
-    UserModel.findOne({
-        _id: undefinedUserId
-    }, (err, data) => {
+    OperatorModel.findOne({_id: defaultOperatorId}, (err, data) => {
         if (err) console.log(err)
         if (!data) {
-            UserModel({
-                _id: undefinedUserId,
-                username: 'deleted',
-                password: 'deleted',
-                name: '已删除用户',
-                level: 5
+            OperatorModel({
+                _id: defaultOperatorId,
+                username: 'root',
+                password: '88888888',
+                name: '默认管理员',
+                level: 0
             }).save((err, data) => {
                 if (err) console.log(err)
                 if (data) console.log(data)
@@ -194,7 +194,7 @@ mongoDB.once('open', function () {
 
 });
 
-const UserModel = mongoose.model('user', mongoose.Schema({
+const OperatorModel = mongoose.model('operator', mongoose.Schema({
     username: {type: String, required: true},
     password: {type: String, required: true},
     name: {type: String, required: true},
@@ -236,7 +236,7 @@ const SaleModel = mongoose.model('sale', mongoose.Schema({
     createdTimeStamp: {type: Number, required: true, default: Date.now()},
     // 0: in, 1: out
     action: {type: Number, required: true, enum: [0, 1]},
-    operatorRef: {type: mongoose.Schema.ObjectId, ref: 'user', required: true},
+    operatorRef: {type: mongoose.Schema.ObjectId, ref: 'operator', required: true},
     customerRef: {type: mongoose.Schema.ObjectId, ref: 'customer', required: false},
     supplierRef: {type: mongoose.Schema.ObjectId, ref: 'supplier', required: false},
     driverRef: {type: mongoose.Schema.ObjectId, ref: 'driver', required: false},
@@ -297,7 +297,7 @@ const TestModel = mongoose.model('test', mongoose.Schema({
     name: {type: String, required: false}
 }))
 
-exports.UserModel = UserModel
+exports.OperatorModel = OperatorModel
 exports.ColorModel = ColorModel
 exports.CustomerModel = CustomerModel
 exports.DashboardModel = DashboardModel
